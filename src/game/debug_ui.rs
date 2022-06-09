@@ -5,6 +5,7 @@ use imgui_winit_support::WinitPlatform;
 use legion::World;
 use std::time::Duration;
 use wgpu::RenderPass;
+use winit::event::Event;
 use winit::window::Window;
 
 pub struct DebugUI {
@@ -40,6 +41,11 @@ impl DebugUI {
     }
 
     pub fn render(&mut self, render_pass: &mut RenderPass) {}
+
+    pub fn record_event<T>(&mut self, window: &Window, event: &Event<'_, T>) {
+        self.platform
+            .handle_event(self.imgui.io_mut(), window, event);
+    }
 
     pub fn update(
         &mut self,

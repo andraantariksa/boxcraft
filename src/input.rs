@@ -19,7 +19,7 @@ impl InputManager {
         }
     }
 
-    pub fn record(&mut self, window_event: &WindowEvent) {
+    pub fn record_event(&mut self, window_event: &WindowEvent) {
         match window_event {
             WindowEvent::KeyboardInput {
                 input:

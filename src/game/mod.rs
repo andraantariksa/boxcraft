@@ -48,12 +48,13 @@ impl Game {
 
     pub(crate) fn run_loop(mut self) {
         let mut time_start = Instant::now();
-        self.event_loop
-            .run(move |event, _, control_flow| match event {
+        self.event_loop.run(move |event, _, control_flow| {
+            self.debug_ui.record_event(&self.window, &event);
+            match event {
                 Event::WindowEvent {
-                    ref event,
+                    event: ref window_event,
                     window_id,
-                } if window_id == self.window.id() => match event {
+                } if window_id == self.window.id() => match window_event {
                     WindowEvent::CloseRequested
                     | WindowEvent::KeyboardInput {
                         input:
@@ -64,8 +65,8 @@ impl Game {
                             },
                         ..
                     } => *control_flow = ControlFlow::Exit,
-                    event => {
-                        self.input_manager.record(event);
+                    rest_window_event => {
+                        self.input_manager.record_event(&rest_window_event);
                     }
                 },
                 Event::MainEventsCleared => {
@@ -81,6 +82,7 @@ impl Game {
                     self.renderer.render(&debug_ui_render_state, &time_elapsed);
                 }
                 _ => {}
-            });
+            }
+        });
     }
 }
