@@ -1,10 +1,13 @@
+use crate::game::camera::Camera;
 use crate::game::debug_ui::DebugUIRenderState;
 use crate::renderer::debug_ui_renderer::DebugUIRenderer;
+use crate::renderer::game_renderer::GameRenderer;
 use std::rc::Rc;
 use wgpu::{
     Color, CommandEncoderDescriptor, LoadOp, Operations, PresentMode, RenderPass,
     RenderPassColorAttachment, RenderPassDescriptor, TextureFormat, TextureViewDescriptor,
 };
+use winit::dpi::PhysicalSize;
 use winit::window::Window;
 
 pub struct RenderContext {
@@ -42,7 +45,7 @@ impl RenderContext {
         let window_size = window.inner_size();
         let render_surface_config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-            format: TextureFormat::Bgra8Unorm,
+            format: TextureFormat::Bgra8UnormSrgb,
             width: window_size.width,
             height: window_size.height,
             present_mode: PresentMode::Immediate,
@@ -58,15 +61,27 @@ impl RenderContext {
         }
     }
 
+    pub fn resize(&mut self, new_window_size: &PhysicalSize<u32>) {
+        self.render_surface_config.width = new_window_size.width;
+        self.render_surface_config.height = new_window_size.height;
+
+        self.render_surface
+            .configure(&self.device, &self.render_surface_config);
+    }
+
     pub fn render(
         &self,
         debug_ui_renderer: &mut DebugUIRenderer,
         debug_ui_render_state: &DebugUIRenderState,
+        game_renderer: &GameRenderer,
+        camera: &Camera,
     )
     // pub fn render<F>(&self, render_pass_recording: F)
     // where
     //     F: FnOnce(&mut RenderPass),
     {
+        game_renderer.prerender(&self, camera);
+
         let texture_to_present = self.render_surface.get_current_texture().unwrap();
         let texture_view_to_present = texture_to_present
             .texture
@@ -87,15 +102,17 @@ impl RenderContext {
                     ops: Operations {
                         store: true,
                         load: LoadOp::Clear(Color {
-                            r: 0.0,
-                            g: 0.0,
-                            b: 0.0,
+                            r: 0.8,
+                            g: 0.8,
+                            b: 0.8,
                             a: 1.0,
                         }),
                     },
                 }],
                 depth_stencil_attachment: None,
             });
+
+            game_renderer.render(&mut render_pass);
 
             debug_ui_renderer
                 .renderer
@@ -106,9 +123,6 @@ impl RenderContext {
                     &mut render_pass,
                 )
                 .unwrap();
-            // render_pass_recording(&mut render_pass);
-
-            // render_pass.set_pipeline(self.triangle_render_pipeline);
         }
 
         self.queue

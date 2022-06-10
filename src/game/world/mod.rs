@@ -1,7 +1,6 @@
-use crate::game::world::block::Block;
-
-pub mod block;
 pub mod generator;
+
+use crate::game::block::Block;
 
 pub struct World {
     render_chunk: i32,

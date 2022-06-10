@@ -4,13 +4,14 @@ use imgui::sys::ImGuiContext;
 use imgui::{Context, DrawData};
 use imgui_wgpu::{Renderer, RendererConfig, RendererResult};
 use wgpu::RenderPass;
+use winit::dpi::PhysicalSize;
 
 pub struct DebugUIRenderer {
     pub renderer: Renderer,
 }
 
 impl DebugUIRenderer {
-    pub fn new(render_context: &mut RenderContext, debug_ui: &mut DebugUI) -> Self {
+    pub fn new(render_context: &RenderContext, debug_ui: &mut DebugUI) -> Self {
         let mut renderer = Renderer::new(
             &mut debug_ui.imgui,
             &render_context.device,
@@ -22,6 +23,8 @@ impl DebugUIRenderer {
         );
         Self { renderer }
     }
+
+    pub fn resize(&mut self, new_window_size: &PhysicalSize<u32>) {}
 
     // pub fn render(
     //     &mut self,

@@ -1,11 +1,12 @@
 use nalgebra::{Vector2, Vector3};
 use std::collections::HashSet;
 use std::rc::Rc;
+use winit::dpi::PhysicalPosition;
 use winit::event::{ElementState, KeyboardInput, VirtualKeyCode, WindowEvent};
 use winit::window::Window;
 
 pub struct InputManager {
-    delta_mouse: Vector2<f32>,
+    mouse_movement: Vector2<f32>,
     keyboard_pressed: HashSet<VirtualKeyCode>,
     window: Rc<Window>,
 }
@@ -13,13 +14,22 @@ pub struct InputManager {
 impl InputManager {
     pub fn new(window: Rc<Window>) -> Self {
         Self {
-            delta_mouse: Vector2::new(0.0, 0.0),
+            mouse_movement: Vector2::new(0.0, 0.0),
             keyboard_pressed: HashSet::new(),
             window,
         }
     }
 
-    pub fn record_event(&mut self, window_event: &WindowEvent) {
+    pub fn get_mouse_movement(&self) -> &Vector2<f32> {
+        &self.mouse_movement
+    }
+
+    pub fn record_event(
+        &mut self,
+        window: &Window,
+        window_event: &WindowEvent,
+        is_cursor_locked: bool,
+    ) {
         match window_event {
             WindowEvent::KeyboardInput {
                 input:
@@ -41,14 +51,32 @@ impl InputManager {
                     }
                 }
             }
-            WindowEvent::CursorMoved { position, .. } => {}
+            WindowEvent::CursorMoved { position, .. } => {
+                if is_cursor_locked {
+                    let window_size = window.inner_size();
+                    let center = nalgebra::Vector2::<f32>::new(
+                        window_size.width as f32 / 2.0,
+                        window_size.height as f32 / 2.0,
+                    );
+                    let new_pos = Vector2::<f32>::new(position.x as f32, position.y as f32);
+
+                    self.mouse_movement += center - new_pos;
+
+                    window
+                        .set_cursor_position(PhysicalPosition {
+                            x: center.x,
+                            y: center.y,
+                        })
+                        .unwrap();
+                }
+            }
             WindowEvent::MouseInput { .. } => {}
             _ => {}
         };
     }
 
     pub fn clear(&mut self) {
-        self.delta_mouse = Vector2::new(0.0, 0.0);
+        self.mouse_movement = Vector2::zeros();
         self.keyboard_pressed.clear();
     }
 }

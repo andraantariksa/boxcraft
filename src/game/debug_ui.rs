@@ -95,5 +95,5 @@ impl DebugUI {
 }
 
 pub struct DebugUIRenderState<'ui> {
-    pub(crate) draw_data: &'ui DrawData,
+    pub draw_data: &'ui DrawData,
 }

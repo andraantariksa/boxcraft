@@ -7,7 +7,7 @@ pub struct Physics {
 }
 
 impl Physics {
-    pub(crate) fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             rigid_body_set: RigidBodySet::new(),
             collider_set: ColliderSet::new(),

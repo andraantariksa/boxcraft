@@ -5,7 +5,7 @@ pub mod renderer;
 
 use crate::game::Game;
 use crate::input::InputManager;
-use renderer::renderer::Renderer;
+use renderer::Renderer;
 use std::rc::Rc;
 use std::time::Instant;
 

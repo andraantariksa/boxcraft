@@ -1,18 +1,24 @@
-use crate::renderer::camera::Camera;
+use crate::game::transform::Transform;
+use crate::renderer::camera::CameraRenderer;
+use crate::InputManager;
+use legion::{system, World};
+use nalgebra::{Rotation3, Vector, Vector3};
 use std::time::Duration;
 
 pub struct Player {
     flying: bool,
-    camera: Camera,
 }
 
 impl Player {
     pub fn new() -> Self {
-        Self {
-            flying: true,
-            camera: Camera::new(),
-        }
+        Self { flying: true }
     }
+}
 
-    pub fn update(&mut self, time_elapsed: Duration) {}
+#[system(for_each)]
+fn update_player(
+    player: &Player,
+    #[resource] camera: &CameraRenderer,
+    #[resource] input_manager: &InputManager,
+) {
 }

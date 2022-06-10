@@ -1,13 +1,18 @@
+pub mod block;
+pub mod camera;
 pub mod debug_ui;
 pub mod player;
 pub mod systems;
+pub mod transform;
 pub mod world;
 
 use crate::game::debug_ui::DebugUI;
 use crate::game::player::Player;
 use crate::game::systems::Systems;
 use crate::physics::Physics;
-use crate::{InputManager, Renderer};
+use crate::renderer::Renderer;
+use crate::InputManager;
+use std::ops::Deref;
 use std::rc::Rc;
 use std::time::Instant;
 use winit::event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent};
@@ -20,6 +25,7 @@ pub struct Game {
     window: Rc<Window>,
 
     debug_ui: DebugUI,
+    is_cursor_locked: bool,
 
     renderer: Renderer,
     physics: Physics,
@@ -27,26 +33,32 @@ pub struct Game {
 }
 
 impl Game {
-    pub(crate) fn new() -> Self {
+    pub fn new() -> Self {
         let event_loop = EventLoop::new();
         let window = Rc::new(WindowBuilder::new().build(&event_loop).unwrap());
 
         let input_manager = InputManager::new(Rc::clone(&window));
         let mut debug_ui = DebugUI::new(&*window);
-        let renderer = pollster::block_on(Renderer::new(Rc::clone(&window), &mut debug_ui));
+
+        let systems = Systems::new();
+        let camera = systems.get_camera_mut();
+        let renderer =
+            pollster::block_on(Renderer::new(Rc::clone(&window), &camera, &mut debug_ui));
+        drop(camera);
 
         Self {
             event_loop,
             debug_ui,
-            renderer,
             input_manager,
             window,
-            systems: Systems::new(),
+            renderer,
+            systems,
+            is_cursor_locked: true,
             physics: Physics::new(),
         }
     }
 
-    pub(crate) fn run_loop(mut self) {
+    pub fn run_loop(mut self) {
         let mut time_start = Instant::now();
         self.event_loop.run(move |event, _, control_flow| {
             self.debug_ui.record_event(&self.window, &event);
@@ -65,21 +77,46 @@ impl Game {
                             },
                         ..
                     } => *control_flow = ControlFlow::Exit,
+                    WindowEvent::KeyboardInput {
+                        input:
+                            KeyboardInput {
+                                state: ElementState::Pressed,
+                                virtual_keycode: Some(VirtualKeyCode::F1),
+                                ..
+                            },
+                        ..
+                    } => {
+                        self.is_cursor_locked = !self.is_cursor_locked;
+                        self.window.set_cursor_grab(self.is_cursor_locked).unwrap();
+                    }
+                    WindowEvent::Resized(_) => {
+                        let new_window_size = self.window.inner_size();
+                        self.renderer.resize(&new_window_size);
+                    }
                     rest_window_event => {
-                        self.input_manager.record_event(&rest_window_event);
+                        self.input_manager.record_event(
+                            &self.window,
+                            &rest_window_event,
+                            self.is_cursor_locked,
+                        );
                     }
                 },
                 Event::MainEventsCleared => {
                     let time_elapsed = time_start.elapsed();
                     time_start = Instant::now();
 
-                    self.systems.update();
+                    self.systems.update(time_elapsed.clone());
+                    let mut camera = self.systems.get_camera_mut();
+                    camera.move_by_offset(self.input_manager.get_mouse_movement(), &time_elapsed);
 
                     let debug_ui_render_state =
                         self.debug_ui
                             .update(&self.systems.world, &self.window, &time_elapsed);
 
-                    self.renderer.render(&debug_ui_render_state, &time_elapsed);
+                    self.renderer
+                        .render(camera.deref(), &debug_ui_render_state, &time_elapsed);
+
+                    self.input_manager.clear();
                 }
                 _ => {}
             }
