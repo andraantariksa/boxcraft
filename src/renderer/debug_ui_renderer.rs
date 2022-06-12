@@ -24,19 +24,19 @@ impl DebugUIRenderer {
         Self { renderer }
     }
 
-    pub fn resize(&mut self, new_window_size: &PhysicalSize<u32>) {}
+    // pub fn resize(&mut self, new_window_size: &PhysicalSize<u32>) {}
 
-    // pub fn render(
-    //     &mut self,
-    //     render_state: &DebugUIRenderState,
-    //     render_context: &RenderContext,
-    //     render_pass: &mut RenderPass,
-    // ) -> RendererResult<()> {
-    //     self.renderer.render(
-    //         render_state.draw_data,
-    //         &render_context.queue,
-    //         &render_context.device,
-    //         render_pass,
-    //     )
-    // }
+    pub fn render<'r>(
+        &'r mut self,
+        render_context: &RenderContext,
+        render_pass: &mut RenderPass<'r>,
+        render_state: &DebugUIRenderState,
+    ) -> RendererResult<()> {
+        self.renderer.render(
+            render_state.draw_data,
+            &render_context.queue,
+            &render_context.device,
+            render_pass,
+        )
+    }
 }

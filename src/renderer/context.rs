@@ -33,7 +33,7 @@ impl RenderContext {
         let (device, queue) = adapter
             .request_device(
                 &wgpu::DeviceDescriptor {
-                    features: wgpu::Features::empty(),
+                    features: wgpu::Features::POLYGON_MODE_LINE,
                     limits: wgpu::Limits::default(),
                     label: None,
                 },
@@ -72,15 +72,12 @@ impl RenderContext {
     pub fn render(
         &self,
         debug_ui_renderer: &mut DebugUIRenderer,
-        debug_ui_render_state: &DebugUIRenderState,
         game_renderer: &GameRenderer,
         camera: &Camera,
+        debug_ui_render_state: &DebugUIRenderState,
     )
-    // pub fn render<F>(&self, render_pass_recording: F)
-    // where
-    //     F: FnOnce(&mut RenderPass),
     {
-        game_renderer.prerender(&self, camera);
+        game_renderer.prerender(&self, &*self.window, camera);
 
         let texture_to_present = self.render_surface.get_current_texture().unwrap();
         let texture_view_to_present = texture_to_present
@@ -114,15 +111,7 @@ impl RenderContext {
 
             game_renderer.render(&mut render_pass);
 
-            debug_ui_renderer
-                .renderer
-                .render(
-                    debug_ui_render_state.draw_data,
-                    &self.queue,
-                    &self.device,
-                    &mut render_pass,
-                )
-                .unwrap();
+            debug_ui_renderer.render(&self, &mut render_pass, &debug_ui_render_state).unwrap();
         }
 
         self.queue

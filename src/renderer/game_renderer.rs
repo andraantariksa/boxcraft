@@ -8,27 +8,31 @@ use std::mem;
 use std::time::Duration;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{
-    include_spirv, include_spirv_raw, Buffer, BufferAddress, ColorTargetState, FragmentState,
-    MultisampleState, PolygonMode, RenderPipelineDescriptor, ShaderModule, ShaderModuleDescriptor,
-    ShaderModuleDescriptorSpirV, TextureFormat, VertexAttribute, VertexBufferLayout, VertexFormat,
-    VertexStepMode,
+    include_spirv, include_spirv_raw, Buffer, BufferAddress, ColorTargetState, Face, FragmentState,
+    FrontFace, MultisampleState, PipelineLayout, PolygonMode, RenderPipelineDescriptor,
+    ShaderModule, ShaderModuleDescriptor, ShaderModuleDescriptorSpirV, ShaderStages, TextureFormat,
+    VertexAttribute, VertexBufferLayout, VertexFormat, VertexStepMode,
 };
 use winit::window::Window;
 
 pub struct GameRenderer {
     camera_renderer: CameraRenderer,
     camera_bind_group: wgpu::BindGroup,
-    cubes_pipeline_layout: wgpu::PipelineLayout,
     wireframe_only: bool,
     render_pipeline: wgpu::RenderPipeline,
     // render_pipeline_descriptor: RenderPipelineDescriptor<'static>,
     cubes_vertex_buffer: Buffer,
     cubes_indices_buffer: Buffer,
+    fragment_shader_module: ShaderModule,
+    vertex_shader_module: ShaderModule,
+    color_targets_state: [ColorTargetState; 1],
+    cubes_vertex_buffer_layout: [VertexBufferLayout<'static>; 1],
+    cubes_pipeline_layout: PipelineLayout,
 }
 
 impl GameRenderer {
-    pub fn new(render_context: &RenderContext, camera: &Camera) -> Self {
-        let camera_renderer = CameraRenderer::new(render_context, camera);
+    pub fn new(render_context: &RenderContext, window: &Window, camera: &Camera) -> Self {
+        let camera_renderer = CameraRenderer::new(render_context, window, camera);
 
         let camera_bind_group_layout =
             render_context
@@ -37,7 +41,7 @@ impl GameRenderer {
                     label: Some("Create bind group layout: Bind group layout descriptor"),
                     entries: &[wgpu::BindGroupLayoutEntry {
                         binding: 0,
-                        visibility: wgpu::ShaderStages::VERTEX,
+                        visibility: ShaderStages::VERTEX | ShaderStages::FRAGMENT,
                         ty: wgpu::BindingType::Buffer {
                             ty: wgpu::BufferBindingType::Uniform,
                             has_dynamic_offset: false,
@@ -85,32 +89,123 @@ impl GameRenderer {
                 });
 
         let vertices = [
+            // Front
+            // 0, 1, 2 & 0, 2, 3
             Vertex {
                 position: Point3::new(-0.5, -0.5, 0.5),
+                normal: Vector3::new(0.0, 0.0, 1.0),
             },
             Vertex {
                 position: Point3::new(0.5, -0.5, 0.5),
+                normal: Vector3::new(0.0, 0.0, 1.0),
             },
             Vertex {
                 position: Point3::new(0.5, 0.5, 0.5),
+                normal: Vector3::new(0.0, 0.0, 1.0),
             },
             Vertex {
                 position: Point3::new(-0.5, 0.5, 0.5),
+                normal: Vector3::new(0.0, 0.0, 1.0),
+            },
+            // Right
+            // 0, 2, 1 & 1, 3, 2
+            Vertex {
+                position: Point3::new(0.5, 0.5, 0.5),
+                normal: Vector3::new(1.0, 0.0, 0.0),
             },
             Vertex {
-                position: Point3::new(-0.5, -0.5, -0.5),
-            },
-            Vertex {
-                position: Point3::new(0.5, -0.5, -0.5),
+                position: Point3::new(0.5, -0.5, 0.5),
+                normal: Vector3::new(1.0, 0.0, 0.0),
             },
             Vertex {
                 position: Point3::new(0.5, 0.5, -0.5),
+                normal: Vector3::new(1.0, 0.0, 0.0),
+            },
+            Vertex {
+                position: Point3::new(0.5, -0.5, -0.5),
+                normal: Vector3::new(1.0, 0.0, 0.0),
+            },
+            // Left
+            // 1, 0, 3 & 2, 3, 0
+            Vertex {
+                position: Point3::new(-0.5, 0.5, 0.5),
+                normal: Vector3::new(-1.0, 0.0, 0.0),
+            },
+            Vertex {
+                position: Point3::new(-0.5, -0.5, 0.5),
+                normal: Vector3::new(-1.0, 0.0, 0.0),
             },
             Vertex {
                 position: Point3::new(-0.5, 0.5, -0.5),
+                normal: Vector3::new(-1.0, 0.0, 0.0),
+            },
+            Vertex {
+                position: Point3::new(-0.5, -0.5, -0.5),
+                normal: Vector3::new(-1.0, 0.0, 0.0),
+            },
+            // Back
+            // 1, 0, 3 & 1, 3, 2
+            Vertex {
+                position: Point3::new(-0.5, -0.5, -0.5),
+                normal: Vector3::new(0.0, 0.0, -1.0),
+            },
+            Vertex {
+                position: Point3::new(0.5, -0.5, -0.5),
+                normal: Vector3::new(0.0, 0.0, -1.0),
+            },
+            Vertex {
+                position: Point3::new(0.5, 0.5, -0.5),
+                normal: Vector3::new(0.0, 0.0, -1.0),
+            },
+            Vertex {
+                position: Point3::new(-0.5, 0.5, -0.5),
+                normal: Vector3::new(0.0, 0.0, -1.0),
+            },
+            // Top
+            // 0, 2, 1 & 1, 2, 3
+            Vertex {
+                position: Point3::new(0.5, 0.5, 0.5),
+                normal: Vector3::new(0.0, 1.0, 0.0),
+            },
+            Vertex {
+                position: Point3::new(-0.5, 0.5, 0.5),
+                normal: Vector3::new(0.0, 1.0, 0.0),
+            },
+            Vertex {
+                position: Point3::new(0.5, 0.5, -0.5),
+                normal: Vector3::new(0.0, 1.0, 0.0),
+            },
+            Vertex {
+                position: Point3::new(-0.5, 0.5, -0.5),
+                normal: Vector3::new(0.0, 1.0, 0.0),
+            },
+            // Bottom
+            // 0, 1, 3 & 0, 3, 2
+            Vertex {
+                position: Point3::new(0.5, -0.5, 0.5),
+                normal: Vector3::new(0.0, -1.0, 0.0),
+            },
+            Vertex {
+                position: Point3::new(-0.5, -0.5, 0.5),
+                normal: Vector3::new(0.0, -1.0, 0.0),
+            },
+            Vertex {
+                position: Point3::new(0.5, -0.5, -0.5),
+                normal: Vector3::new(0.0, -1.0, 0.0),
+            },
+            Vertex {
+                position: Point3::new(-0.5, -0.5, -0.5),
+                normal: Vector3::new(0.0, -1.0, 0.0),
             },
         ];
-        let indices: [u16; 4] = [0, 3, 1, 2];
+        let indices = [
+            0u16, 1, 2, 0, 2, 3, // Front
+            13, 12, 15, 13, 15, 14, // Back
+            4, 5, 6, 5, 7, 6, // Right
+            9, 8, 11, 10, 11, 8, // Left
+            16, 18, 17, 17, 18, 19, // Top
+            20, 21, 23, 20, 23, 22, // Bottom
+        ];
 
         let cubes_vertex_buffer = render_context
             .device
@@ -128,15 +223,7 @@ impl GameRenderer {
                     usage: wgpu::BufferUsages::INDEX,
                 });
 
-        let cubes_vertex_buffer_layout = VertexBufferLayout {
-            array_stride: mem::size_of::<Vertex>() as BufferAddress,
-            step_mode: VertexStepMode::Vertex,
-            attributes: &[VertexAttribute {
-                format: VertexFormat::Float32x3,
-                offset: 0,
-                shader_location: 0,
-            }],
-        };
+        let cubes_vertex_buffer_layout = [Vertex::buffer_layout()];
 
         let color_targets_state = [ColorTargetState {
             format: TextureFormat::Bgra8UnormSrgb,
@@ -150,13 +237,13 @@ impl GameRenderer {
             vertex: wgpu::VertexState {
                 module: &vertex_shader_module,
                 entry_point: "main",
-                buffers: &[cubes_vertex_buffer_layout],
+                buffers: &cubes_vertex_buffer_layout,
             },
             primitive: wgpu::PrimitiveState {
-                topology: wgpu::PrimitiveTopology::TriangleStrip,
+                topology: wgpu::PrimitiveTopology::TriangleList,
                 strip_index_format: None,
-                front_face: Default::default(),
-                cull_mode: None,
+                front_face: FrontFace::Ccw,
+                cull_mode: Some(Face::Back),
                 unclipped_depth: false,
                 polygon_mode: PolygonMode::Fill,
                 conservative: false,
@@ -187,12 +274,15 @@ impl GameRenderer {
             cubes_vertex_buffer,
             render_pipeline,
             cubes_indices_buffer,
-            // render_pipeline_descriptor,
+            fragment_shader_module,
+            vertex_shader_module,
+            color_targets_state,
+            cubes_vertex_buffer_layout, // render_pipeline_descriptor,
         }
     }
 
-    pub fn prerender(&self, render_context: &RenderContext, camera: &Camera) {
-        self.camera_renderer.update(render_context, camera);
+    pub fn prerender(&self, render_context: &RenderContext, window: &Window, camera: &Camera) {
+        self.camera_renderer.update(render_context, window, camera);
     }
 
     pub fn render<'a>(&'a self, render_pass: &mut wgpu::RenderPass<'a>) {
@@ -203,7 +293,11 @@ impl GameRenderer {
             self.cubes_indices_buffer.slice(..),
             wgpu::IndexFormat::Uint16,
         );
-        render_pass.draw_indexed(0..4, 0, 0..1);
+        render_pass.draw_indexed(0..6 * 6, 0, 0..1);
+    }
+
+    pub fn is_wireframe_only(&self) -> bool {
+        self.wireframe_only
     }
 
     pub fn set_display_wireframe_only(
@@ -213,13 +307,43 @@ impl GameRenderer {
     ) {
         self.wireframe_only = wireframe_only;
 
-        // self.render_pipeline_descriptor.primitive.polygon_mode = if wireframe_only {
-        //     PolygonMode::Line
-        // } else {
-        //     PolygonMode::Fill
-        // };
-        // self.render_pipeline = render_context
-        //     .device
-        //     .create_render_pipeline(&self.render_pipeline_descriptor);
+        let polygon_mode = if wireframe_only {
+            PolygonMode::Line
+        } else {
+            PolygonMode::Fill
+        };
+        self.render_pipeline =
+            render_context
+                .device
+                .create_render_pipeline(&RenderPipelineDescriptor {
+                    label: Some("Create render pipeline: Render pipeline descriptor"),
+                    layout: Some(&self.cubes_pipeline_layout),
+                    vertex: wgpu::VertexState {
+                        module: &self.vertex_shader_module,
+                        entry_point: "main",
+                        buffers: &self.cubes_vertex_buffer_layout,
+                    },
+                    primitive: wgpu::PrimitiveState {
+                        topology: wgpu::PrimitiveTopology::TriangleList,
+                        strip_index_format: None,
+                        front_face: FrontFace::Ccw,
+                        cull_mode: Some(Face::Back),
+                        unclipped_depth: false,
+                        polygon_mode,
+                        conservative: false,
+                    },
+                    depth_stencil: None,
+                    multisample: MultisampleState {
+                        count: 1,
+                        mask: !0,
+                        alpha_to_coverage_enabled: false,
+                    },
+                    fragment: Some(FragmentState {
+                        module: &self.fragment_shader_module,
+                        entry_point: "main",
+                        targets: &self.color_targets_state,
+                    }),
+                    multiview: None,
+                });
     }
 }

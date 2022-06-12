@@ -1,7 +1,7 @@
 use glob::{glob, GlobError, PatternError};
 use shaderc::OptimizationLevel;
-use shaderc::{CompileOptions, ResolvedInclude};
-use std::env;
+use shaderc::{CompileOptions};
+
 use std::fs::{read_to_string, write};
 use std::path::PathBuf;
 
@@ -68,7 +68,7 @@ fn main() -> BuildScriptResult<()> {
     //         })
     //     },
     // );
-    let target = std::env::var("TARGET").unwrap();
+    let _target = std::env::var("TARGET").unwrap();
     let profile = std::env::var("PROFILE").unwrap();
 
     compile_options.set_optimization_level(OptimizationLevel::Zero);

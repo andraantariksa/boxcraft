@@ -18,6 +18,7 @@ use winit::dpi::PhysicalSize;
 use winit::window::Window;
 
 pub mod block;
+pub mod box_instance;
 pub mod camera;
 pub mod context;
 pub mod debug_ui_renderer;
@@ -37,7 +38,7 @@ pub struct Renderer {
 impl Renderer {
     pub async fn new(window: Rc<Window>, camera: &Camera, debug_ui: &mut DebugUI) -> Self {
         let mut render_context = RenderContext::new(Rc::clone(&window)).await;
-        let game_renderer = GameRenderer::new(&render_context, camera);
+        let game_renderer = GameRenderer::new(&render_context, &*window, camera);
         let debug_ui_renderer = DebugUIRenderer::new(&render_context, debug_ui);
 
         Self {
@@ -50,14 +51,14 @@ impl Renderer {
     pub fn render(
         &mut self,
         camera: &Camera,
-        debug_ui_render_state: &DebugUIRenderState,
         time_elapsed: &Duration,
+        debug_ui_render_state: &DebugUIRenderState,
     ) {
         self.render_context.render(
             &mut self.debug_ui_renderer,
-            debug_ui_render_state,
             &self.game_renderer,
             camera,
+            debug_ui_render_state,
         );
     }
 

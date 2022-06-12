@@ -6,6 +6,7 @@ pub mod systems;
 pub mod transform;
 pub mod world;
 
+use crate::game::camera::Camera;
 use crate::game::debug_ui::DebugUI;
 use crate::game::player::Player;
 use crate::game::systems::Systems;
@@ -15,13 +16,13 @@ use crate::InputManager;
 use std::ops::Deref;
 use std::rc::Rc;
 use std::time::Instant;
+use winit::dpi::PhysicalSize;
 use winit::event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::{Window, WindowBuilder};
 
 pub struct Game {
     event_loop: EventLoop<()>,
-    input_manager: InputManager,
     window: Rc<Window>,
 
     debug_ui: DebugUI,
@@ -35,12 +36,19 @@ pub struct Game {
 impl Game {
     pub fn new() -> Self {
         let event_loop = EventLoop::new();
-        let window = Rc::new(WindowBuilder::new().build(&event_loop).unwrap());
+        let window = Rc::new(
+            WindowBuilder::new()
+                .with_inner_size(PhysicalSize {
+                    width: 1024,
+                    height: 768,
+                })
+                .build(&event_loop)
+                .unwrap(),
+        );
 
-        let input_manager = InputManager::new(Rc::clone(&window));
         let mut debug_ui = DebugUI::new(&*window);
 
-        let systems = Systems::new();
+        let systems = Systems::new(InputManager::new(), Camera::new());
         let camera = systems.get_camera_mut();
         let renderer =
             pollster::block_on(Renderer::new(Rc::clone(&window), &camera, &mut debug_ui));
@@ -49,7 +57,6 @@ impl Game {
         Self {
             event_loop,
             debug_ui,
-            input_manager,
             window,
             renderer,
             systems,
@@ -94,7 +101,8 @@ impl Game {
                         self.renderer.resize(&new_window_size);
                     }
                     rest_window_event => {
-                        self.input_manager.record_event(
+                        let mut input_manager = self.systems.get_input_manager_mut();
+                        input_manager.record_event(
                             &self.window,
                             &rest_window_event,
                             self.is_cursor_locked,
@@ -106,17 +114,31 @@ impl Game {
                     time_start = Instant::now();
 
                     self.systems.update(time_elapsed.clone());
-                    let mut camera = self.systems.get_camera_mut();
-                    camera.move_by_offset(self.input_manager.get_mouse_movement(), &time_elapsed);
 
-                    let debug_ui_render_state =
-                        self.debug_ui
-                            .update(&self.systems.world, &self.window, &time_elapsed);
+                    let debug_ui_render_state = self.debug_ui.update(
+                        &self.systems.world,
+                        &self.systems.resources,
+                        &self.window,
+                        &time_elapsed,
+                    );
+
+                    let mut input_manager = self.systems.get_input_manager_mut();
+
+                    let mut camera = self.systems.get_camera_mut();
+                    camera.move_by_offset(input_manager.get_mouse_movement(), &time_elapsed);
+
+                    let is_f2_pressed = input_manager.is_key_pressed(&VirtualKeyCode::F2);
+                    if is_f2_pressed {
+                        self.renderer.game_renderer.set_display_wireframe_only(
+                            &self.renderer.render_context,
+                            !self.renderer.game_renderer.is_wireframe_only(),
+                        );
+                    }
 
                     self.renderer
-                        .render(camera.deref(), &debug_ui_render_state, &time_elapsed);
+                        .render(&*camera, &time_elapsed, &debug_ui_render_state);
 
-                    self.input_manager.clear();
+                    input_manager.clear();
                 }
                 _ => {}
             }

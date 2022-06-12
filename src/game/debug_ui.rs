@@ -1,8 +1,9 @@
+use crate::game::camera::Camera;
 use crate::renderer::context::RenderContext;
 use imgui::{Condition, DrawData, FontSource};
 use imgui_wgpu::{Renderer, RendererConfig};
 use imgui_winit_support::WinitPlatform;
-use legion::World;
+use legion::{Resources, World};
 use std::time::Duration;
 use wgpu::RenderPass;
 use winit::event::Event;
@@ -50,6 +51,7 @@ impl DebugUI {
     pub fn update(
         &mut self,
         world: &World,
+        resources: &Resources,
         window: &Window,
         time_elapsed: &Duration,
     ) -> DebugUIRenderState {
@@ -59,31 +61,37 @@ impl DebugUI {
             .unwrap();
         let ui = self.imgui.frame();
 
+        let camera = resources.get::<Camera>().unwrap();
+        let (camera_yaw, camera_pitch) = camera.get_yaw_pitch();
+
         {
-            let window = imgui::Window::new("Hello world");
+            let window = imgui::Window::new("Info");
             window
-                .size([300.0, 100.0], Condition::FirstUseEver)
+                .size([300.0, 300.0], Condition::FirstUseEver)
                 .build(&ui, || {
-                    ui.text("Hello world!");
-                    ui.text("This...is...imgui-rs on WGPU!");
+                    ui.text("Camera");
                     ui.separator();
                     let mouse_pos = ui.io().mouse_pos;
+
                     ui.text(format!(
                         "Mouse Position: ({:.1},{:.1})",
                         mouse_pos[0], mouse_pos[1]
                     ));
+                    ui.text(format!("Yaw: {:.1} Pitch: {:.1}", camera_yaw, camera_pitch));
+                    ui.text(format!("Direction: {}", camera.get_direction()));
+                    ui.text(format!("Pos: {}", camera.position));
                 });
-
-            let window = imgui::Window::new("Hello too");
-            window
-                .size([400.0, 200.0], Condition::FirstUseEver)
-                .position([400.0, 200.0], Condition::FirstUseEver)
-                .build(&ui, || {
-                    ui.text(format!("Frametime: {:?}", 123));
-                });
-
-            let mut demo_open = true;
-            ui.show_demo_window(&mut demo_open);
+            //
+            //     let window = imgui::Window::new("Hello too");
+            //     window
+            //         .size([400.0, 200.0], Condition::FirstUseEver)
+            //         .position([400.0, 200.0], Condition::FirstUseEver)
+            //         .build(&ui, || {
+            //             ui.text(format!("Frametime: {:?}", 123));
+            //         });
+            //
+            //     let mut demo_open = true;
+            //     ui.show_demo_window(&mut demo_open);
         }
 
         self.platform.prepare_render(&ui, window);

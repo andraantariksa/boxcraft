@@ -8,16 +8,18 @@ use winit::window::Window;
 pub struct InputManager {
     mouse_movement: Vector2<f32>,
     keyboard_pressed: HashSet<VirtualKeyCode>,
-    window: Rc<Window>,
 }
 
 impl InputManager {
-    pub fn new(window: Rc<Window>) -> Self {
+    pub fn new() -> Self {
         Self {
             mouse_movement: Vector2::new(0.0, 0.0),
             keyboard_pressed: HashSet::new(),
-            window,
         }
+    }
+
+    pub fn is_key_pressed(&self, key: &VirtualKeyCode) -> bool {
+        self.keyboard_pressed.contains(key)
     }
 
     pub fn get_mouse_movement(&self) -> &Vector2<f32> {
