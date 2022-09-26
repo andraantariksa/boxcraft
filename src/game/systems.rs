@@ -1,10 +1,11 @@
 use crate::game::camera::Camera;
-use crate::game::debug_ui::DebugUI;
+
 use crate::game::player::Player;
-use crate::renderer::context::RenderContext;
-use crate::InputManager;
-use atomic_refcell::{AtomicRef, AtomicRefMut};
-use legion::{IntoQuery, Resources, Schedule, World, WorldOptions};
+use crate::misc::input::InputManager;
+
+use crate::game::world::WorldBlocks;
+use atomic_refcell::AtomicRefMut;
+use legion::{Resources, Schedule, World};
 use std::time::Duration;
 
 pub struct Systems {
@@ -20,7 +21,11 @@ impl Systems {
         resources.insert(input_manager);
 
         let mut world = World::default();
-        world.push((Player::new(),));
+        let player = Player::new();
+
+        resources.insert(WorldBlocks::from(&player));
+
+        world.push((player,));
 
         Self {
             schedule: Schedule::builder()
@@ -36,10 +41,7 @@ impl Systems {
         self.schedule.execute(&mut self.world, &mut self.resources);
     }
 
-    pub fn get_camera_mut(&self) -> AtomicRefMut<Camera> {
-        self.resources.get_mut::<Camera>().unwrap()
-    }
-    pub fn get_input_manager_mut(&self) -> AtomicRefMut<InputManager> {
-        self.resources.get_mut::<InputManager>().unwrap()
+    pub fn get_resources(&self) -> &Resources {
+        &self.resources
     }
 }

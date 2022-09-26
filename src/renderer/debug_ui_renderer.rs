@@ -1,10 +1,10 @@
 use crate::game::debug_ui::{DebugUI, DebugUIRenderState};
 use crate::renderer::context::RenderContext;
-use imgui::sys::ImGuiContext;
-use imgui::{Context, DrawData};
+
+
 use imgui_wgpu::{Renderer, RendererConfig, RendererResult};
 use wgpu::RenderPass;
-use winit::dpi::PhysicalSize;
+
 
 pub struct DebugUIRenderer {
     pub renderer: Renderer,
@@ -12,7 +12,7 @@ pub struct DebugUIRenderer {
 
 impl DebugUIRenderer {
     pub fn new(render_context: &RenderContext, debug_ui: &mut DebugUI) -> Self {
-        let mut renderer = Renderer::new(
+        let renderer = Renderer::new(
             &mut debug_ui.imgui,
             &render_context.device,
             &render_context.queue,

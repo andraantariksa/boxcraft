@@ -1,19 +1,20 @@
 use crate::game::camera::Camera;
+use crate::misc::window::Window;
 use crate::renderer::camera::CameraRenderer;
 use crate::renderer::context::RenderContext;
 use crate::renderer::util::{any_sized_as_u8_slice, any_slice_as_u8_slice};
-use crate::renderer::vertex::Vertex;
-use nalgebra::{Point3, Vector3};
-use std::mem;
-use std::time::Duration;
+use crate::renderer::vertex::{Vertex, VertexLike};
+use nalgebra::{Matrix4, Point3, Vector3};
+
+use crate::game::block::BlockRawInstance;
+use crate::renderer::texture::Texture;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{
-    include_spirv, include_spirv_raw, Buffer, BufferAddress, ColorTargetState, Face, FragmentState,
-    FrontFace, MultisampleState, PipelineLayout, PolygonMode, RenderPipelineDescriptor,
-    ShaderModule, ShaderModuleDescriptor, ShaderModuleDescriptorSpirV, ShaderStages, TextureFormat,
-    VertexAttribute, VertexBufferLayout, VertexFormat, VertexStepMode,
+    include_spirv, BlendComponent, BlendState, Buffer, BufferUsages, ColorTargetState, ColorWrites,
+    CompareFunction, DepthStencilState, Face, FragmentState, FrontFace, MultisampleState,
+    PipelineLayout, PolygonMode, RenderPipelineDescriptor, ShaderModule, ShaderModuleDescriptor,
+    ShaderStages, TextureFormat, VertexBufferLayout,
 };
-use winit::window::Window;
 
 pub struct GameRenderer {
     camera_renderer: CameraRenderer,
@@ -21,13 +22,18 @@ pub struct GameRenderer {
     wireframe_only: bool,
     render_pipeline: wgpu::RenderPipeline,
     // render_pipeline_descriptor: RenderPipelineDescriptor<'static>,
-    cubes_vertex_buffer: Buffer,
-    cubes_indices_buffer: Buffer,
+    cube_vertex_buffer: Buffer,
+    cube_indices_buffer: Buffer,
+    block_instances_buffer: Buffer,
     fragment_shader_module: ShaderModule,
     vertex_shader_module: ShaderModule,
     color_targets_state: [ColorTargetState; 1],
-    cubes_vertex_buffer_layout: [VertexBufferLayout<'static>; 1],
+    block_instance_vertex_buffer_layout: [VertexBufferLayout<'static>; 2],
     cubes_pipeline_layout: PipelineLayout,
+
+    pub depth_texture: Texture,
+
+    blocks_total: u32,
 }
 
 impl GameRenderer {
@@ -55,7 +61,7 @@ impl GameRenderer {
             render_context
                 .device
                 .create_bind_group(&wgpu::BindGroupDescriptor {
-                    label: Some("Create bind group: Bind group descriptor"),
+                    label: Some("Create bind group"),
                     layout: &camera_bind_group_layout,
                     entries: &[wgpu::BindGroupEntry {
                         binding: 0,
@@ -63,11 +69,11 @@ impl GameRenderer {
                     }],
                 });
 
-        let cubes_pipeline_layout =
+        let cube_pipeline_layout =
             render_context
                 .device
                 .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                    label: Some("Create pipeline layout: Pipeline layout descriptor"),
+                    label: Some("Create pipeline layout"),
                     bind_group_layouts: &[&camera_bind_group_layout],
                     push_constant_ranges: &[],
                 });
@@ -207,37 +213,55 @@ impl GameRenderer {
             20, 21, 23, 20, 23, 22, // Bottom
         ];
 
-        let cubes_vertex_buffer = render_context
-            .device
-            .create_buffer_init(&BufferInitDescriptor {
-                label: Some("Cubes vertex buffer init"),
-                contents: any_slice_as_u8_slice(&vertices),
-                usage: wgpu::BufferUsages::VERTEX,
-            });
+        let block_instances_buffer =
+            render_context
+                .device
+                .create_buffer_init(&BufferInitDescriptor {
+                    label: Some("Block instances buffer init"),
+                    contents: any_sized_as_u8_slice(&Matrix4::new(
+                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    )),
+                    usage: BufferUsages::VERTEX,
+                });
+        let cubes_vertices_buffer =
+            render_context
+                .device
+                .create_buffer_init(&BufferInitDescriptor {
+                    label: Some("Cubes vertex buffer init"),
+                    contents: any_slice_as_u8_slice(&vertices),
+                    usage: BufferUsages::VERTEX,
+                });
         let cubes_indices_buffer =
             render_context
                 .device
                 .create_buffer_init(&BufferInitDescriptor {
                     label: Some("Cubes indices buffer init"),
                     contents: any_slice_as_u8_slice(&indices),
-                    usage: wgpu::BufferUsages::INDEX,
+                    usage: BufferUsages::INDEX,
                 });
 
-        let cubes_vertex_buffer_layout = [Vertex::buffer_layout()];
+        let block_instance_vertex_buffer_layout = [
+            Vertex::vertex_buffer_layout(),
+            BlockRawInstance::vertex_buffer_layout(),
+        ];
 
         let color_targets_state = [ColorTargetState {
             format: TextureFormat::Bgra8UnormSrgb,
-            blend: None,
-            write_mask: Default::default(),
+            blend: Some(BlendState {
+                color: BlendComponent::REPLACE,
+                alpha: BlendComponent::REPLACE,
+            }),
+            write_mask: ColorWrites::all(),
         }];
 
+        let depth_texture = Texture::new_depth(&render_context);
         let render_pipeline_descriptor = RenderPipelineDescriptor {
             label: Some("Create render pipeline: Render pipeline descriptor"),
-            layout: Some(&cubes_pipeline_layout),
+            layout: Some(&cube_pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &vertex_shader_module,
                 entry_point: "main",
-                buffers: &cubes_vertex_buffer_layout,
+                buffers: &block_instance_vertex_buffer_layout,
             },
             primitive: wgpu::PrimitiveState {
                 topology: wgpu::PrimitiveTopology::TriangleList,
@@ -248,7 +272,13 @@ impl GameRenderer {
                 polygon_mode: PolygonMode::Fill,
                 conservative: false,
             },
-            depth_stencil: None,
+            depth_stencil: Some(DepthStencilState {
+                format: Texture::DEPTH_FORMAT,
+                depth_write_enabled: true,
+                depth_compare: CompareFunction::Less,
+                stencil: Default::default(),
+                bias: Default::default(),
+            }),
             multisample: MultisampleState {
                 count: 1,
                 mask: !0,
@@ -270,30 +300,58 @@ impl GameRenderer {
             camera_renderer,
             camera_bind_group,
             wireframe_only: render_pipeline_descriptor.primitive.polygon_mode != PolygonMode::Fill,
-            cubes_pipeline_layout,
-            cubes_vertex_buffer,
+            cubes_pipeline_layout: cube_pipeline_layout,
             render_pipeline,
-            cubes_indices_buffer,
+
+            cube_vertex_buffer: cubes_vertices_buffer,
+            cube_indices_buffer: cubes_indices_buffer,
+            block_instances_buffer,
+
             fragment_shader_module,
             vertex_shader_module,
+
             color_targets_state,
-            cubes_vertex_buffer_layout, // render_pipeline_descriptor,
+            block_instance_vertex_buffer_layout, // render_pipeline_descriptor,
+            blocks_total: 0,
+            depth_texture,
         }
+    }
+
+    pub fn update_blocks(
+        &mut self,
+        render_context: &RenderContext,
+        blocks: &Vec<BlockRawInstance>,
+        blocks_total: u32,
+    ) {
+        self.blocks_total = blocks_total;
+        self.block_instances_buffer =
+            render_context
+                .device
+                .create_buffer_init(&BufferInitDescriptor {
+                    label: Some("Block instances buffer recreation"),
+                    contents: any_slice_as_u8_slice(blocks.as_slice()),
+                    usage: BufferUsages::VERTEX,
+                })
     }
 
     pub fn prerender(&self, render_context: &RenderContext, window: &Window, camera: &Camera) {
         self.camera_renderer.update(render_context, window, camera);
     }
 
-    pub fn render<'a>(&'a self, render_pass: &mut wgpu::RenderPass<'a>) {
+    pub fn render<'b>(&'b self, render_pass: &mut wgpu::RenderPass<'b>) {
         render_pass.set_pipeline(&self.render_pipeline);
+
         render_pass.set_bind_group(0, &self.camera_bind_group, &[]);
-        render_pass.set_vertex_buffer(0, self.cubes_vertex_buffer.slice(..));
+
+        render_pass.set_vertex_buffer(0, self.cube_vertex_buffer.slice(..));
+        render_pass.set_vertex_buffer(1, self.block_instances_buffer.slice(..));
+
         render_pass.set_index_buffer(
-            self.cubes_indices_buffer.slice(..),
+            self.cube_indices_buffer.slice(..),
             wgpu::IndexFormat::Uint16,
         );
-        render_pass.draw_indexed(0..6 * 6, 0, 0..1);
+
+        render_pass.draw_indexed(0..6 * 6, 0, 0..self.blocks_total);
     }
 
     pub fn is_wireframe_only(&self) -> bool {
@@ -316,12 +374,12 @@ impl GameRenderer {
             render_context
                 .device
                 .create_render_pipeline(&RenderPipelineDescriptor {
-                    label: Some("Create render pipeline: Render pipeline descriptor"),
+                    label: Some("Change render pipeline: Render pipeline descriptor"),
                     layout: Some(&self.cubes_pipeline_layout),
                     vertex: wgpu::VertexState {
                         module: &self.vertex_shader_module,
                         entry_point: "main",
-                        buffers: &self.cubes_vertex_buffer_layout,
+                        buffers: &self.block_instance_vertex_buffer_layout,
                     },
                     primitive: wgpu::PrimitiveState {
                         topology: wgpu::PrimitiveTopology::TriangleList,
@@ -332,7 +390,13 @@ impl GameRenderer {
                         polygon_mode,
                         conservative: false,
                     },
-                    depth_stencil: None,
+                    depth_stencil: Some(DepthStencilState {
+                        format: Texture::DEPTH_FORMAT,
+                        depth_write_enabled: true,
+                        depth_compare: CompareFunction::Less,
+                        stencil: Default::default(),
+                        bias: Default::default(),
+                    }),
                     multisample: MultisampleState {
                         count: 1,
                         mask: !0,

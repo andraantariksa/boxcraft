@@ -1,7 +1,7 @@
 use crate::game::camera::Camera;
-use crate::renderer::context::RenderContext;
+
 use imgui::{Condition, DrawData, FontSource};
-use imgui_wgpu::{Renderer, RendererConfig};
+
 use imgui_winit_support::WinitPlatform;
 use legion::{Resources, World};
 use std::time::Duration;
@@ -22,7 +22,7 @@ impl DebugUI {
         let mut platform = WinitPlatform::init(&mut imgui);
         platform.attach_window(
             imgui.io_mut(),
-            &window,
+            window,
             imgui_winit_support::HiDpiMode::Default,
         );
         imgui.set_ini_filename(None);
@@ -41,7 +41,7 @@ impl DebugUI {
         Self { imgui, platform }
     }
 
-    pub fn render(&mut self, render_pass: &mut RenderPass) {}
+    pub fn render(&mut self, _render_pass: &mut RenderPass) {}
 
     pub fn record_event<T>(&mut self, window: &Window, event: &Event<'_, T>) {
         self.platform
@@ -50,7 +50,7 @@ impl DebugUI {
 
     pub fn update(
         &mut self,
-        world: &World,
+        _world: &World,
         resources: &Resources,
         window: &Window,
         time_elapsed: &Duration,

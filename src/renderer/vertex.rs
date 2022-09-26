@@ -1,4 +1,4 @@
-use nalgebra::{Point3, Vector3, Vector4};
+use nalgebra::{Point3, Vector3};
 use std::mem;
 use wgpu::{BufferAddress, VertexAttribute, VertexBufferLayout, VertexFormat, VertexStepMode};
 
@@ -7,8 +7,12 @@ pub struct Vertex {
     pub normal: Vector3<f32>,
 }
 
-impl Vertex {
-    pub fn buffer_layout<'a>() -> VertexBufferLayout<'a> {
+pub trait VertexLike {
+    fn vertex_buffer_layout<'a>() -> VertexBufferLayout<'a>;
+}
+
+impl VertexLike for Vertex {
+    fn vertex_buffer_layout<'a>() -> VertexBufferLayout<'a> {
         VertexBufferLayout {
             array_stride: mem::size_of::<Vertex>() as BufferAddress,
             step_mode: VertexStepMode::Vertex,

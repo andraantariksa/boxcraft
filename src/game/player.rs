@@ -1,9 +1,9 @@
 use crate::game::camera::Camera;
-use crate::game::transform::Transform;
-use crate::renderer::camera::CameraRenderer;
-use crate::InputManager;
-use legion::{system, World};
-use nalgebra::{Rotation3, Vector, Vector3};
+
+use crate::misc::input::InputManager;
+
+use legion::system;
+
 use std::time::Duration;
 use winit::event::VirtualKeyCode;
 
@@ -19,7 +19,7 @@ impl Player {
 
 #[system(for_each)]
 pub fn update_player(
-    player: &Player,
+    _player: &Player,
     #[resource] camera: &mut Camera,
     #[resource] input_manager: &InputManager,
     #[resource] elapsed_time: &Duration,

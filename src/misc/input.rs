@@ -1,6 +1,6 @@
-use nalgebra::{Vector2, Vector3};
+use nalgebra::Vector2;
 use std::collections::HashSet;
-use std::rc::Rc;
+
 use winit::dpi::PhysicalPosition;
 use winit::event::{ElementState, KeyboardInput, VirtualKeyCode, WindowEvent};
 use winit::window::Window;
@@ -56,7 +56,7 @@ impl InputManager {
             WindowEvent::CursorMoved { position, .. } => {
                 if is_cursor_locked {
                     let window_size = window.inner_size();
-                    let center = nalgebra::Vector2::<f32>::new(
+                    let center = Vector2::<f32>::new(
                         window_size.width as f32 / 2.0,
                         window_size.height as f32 / 2.0,
                     );
@@ -64,12 +64,10 @@ impl InputManager {
 
                     self.mouse_movement += center - new_pos;
 
-                    window
-                        .set_cursor_position(PhysicalPosition {
-                            x: center.x,
-                            y: center.y,
-                        })
-                        .unwrap();
+                    window.set_cursor_position(PhysicalPosition {
+                        x: center.x,
+                        y: center.y,
+                    });
                 }
             }
             WindowEvent::MouseInput { .. } => {}

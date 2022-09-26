@@ -1,27 +1,25 @@
 use crate::game::camera::Camera;
 use crate::game::debug_ui::DebugUIRenderState;
+use crate::misc::window::Window;
 use crate::renderer::debug_ui_renderer::DebugUIRenderer;
 use crate::renderer::game_renderer::GameRenderer;
-use std::rc::Rc;
-use wgpu::{
-    Color, CommandEncoderDescriptor, LoadOp, Operations, PresentMode, RenderPass,
-    RenderPassColorAttachment, RenderPassDescriptor, TextureFormat, TextureViewDescriptor,
-};
+
+use crate::game::world::WorldBlocks;
+use wgpu::{Color, CommandEncoder, CommandEncoderDescriptor, Instance, LoadOp, Operations, PresentMode, RenderPassColorAttachment, RenderPassDepthStencilAttachment, RenderPassDescriptor, Surface, SurfaceConfiguration, SurfaceTexture, TextureFormat, TextureView, TextureViewDescriptor};
 use winit::dpi::PhysicalSize;
-use winit::window::Window;
+use crate::renderer::texture::Texture;
 
 pub struct RenderContext {
-    pub render_surface: wgpu::Surface,
+    pub render_surface: Surface,
     pub device: wgpu::Device,
     pub queue: wgpu::Queue,
-    pub render_surface_config: wgpu::SurfaceConfiguration,
-    pub window: Rc<Window>,
+    pub render_surface_config: SurfaceConfiguration,
 }
 
 impl RenderContext {
-    pub async fn new(window: Rc<Window>) -> Self {
-        let instance = wgpu::Instance::new(wgpu::Backends::all());
-        let render_surface = unsafe { instance.create_surface(&*window) };
+    pub async fn new(window: &Window) -> Self {
+        let instance = Instance::new(wgpu::Backends::all());
+        let render_surface = unsafe { instance.create_surface(&**window) };
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
                 power_preference: wgpu::PowerPreference::HighPerformance,
@@ -57,7 +55,6 @@ impl RenderContext {
             render_surface_config,
             queue,
             device,
-            window,
         }
     }
 
@@ -69,54 +66,58 @@ impl RenderContext {
             .configure(&self.device, &self.render_surface_config);
     }
 
-    pub fn render(
-        &self,
-        debug_ui_renderer: &mut DebugUIRenderer,
-        game_renderer: &GameRenderer,
-        camera: &Camera,
-        debug_ui_render_state: &DebugUIRenderState,
-    )
-    {
-        game_renderer.prerender(&self, &*self.window, camera);
-
+    pub fn create_command_encoder(
+        &self
+    ) -> (CommandEncoder, SurfaceTexture, TextureView) {
         let texture_to_present = self.render_surface.get_current_texture().unwrap();
         let texture_view_to_present = texture_to_present
             .texture
             .create_view(&TextureViewDescriptor::default());
 
-        let mut command_encoder = self
+        let command_encoder = self
             .device
             .create_command_encoder(&CommandEncoderDescriptor {
                 label: Some("Command encoder descriptor"),
             });
 
-        {
-            let mut render_pass = command_encoder.begin_render_pass(&RenderPassDescriptor {
-                label: Some("Render pass descriptor"),
-                color_attachments: &[RenderPassColorAttachment {
-                    view: &texture_view_to_present,
-                    resolve_target: None,
-                    ops: Operations {
-                        store: true,
-                        load: LoadOp::Clear(Color {
-                            r: 0.8,
-                            g: 0.8,
-                            b: 0.8,
-                            a: 1.0,
-                        }),
-                    },
-                }],
-                depth_stencil_attachment: None,
-            });
+        (command_encoder, texture_to_present, texture_view_to_present)
 
-            game_renderer.render(&mut render_pass);
-
-            debug_ui_renderer.render(&self, &mut render_pass, &debug_ui_render_state).unwrap();
-        }
-
-        self.queue
-            .submit(core::iter::once(command_encoder.finish()));
-
-        texture_to_present.present();
+        // {
+        //     let mut render_pass = command_encoder.begin_render_pass(&RenderPassDescriptor {
+        //         label: Some("Render pass descriptor"),
+        //         color_attachments: &[RenderPassColorAttachment {
+        //             view: &texture_view_to_present,
+        //             resolve_target: None,
+        //             ops: Operations {
+        //                 store: true,
+        //                 load: LoadOp::Clear(Color {
+        //                     r: 0.8,
+        //                     g: 0.8,
+        //                     b: 0.8,
+        //                     a: 1.0,
+        //                 }),
+        //             },
+        //         }],
+        //         depth_stencil_attachment: Some(RenderPassDepthStencilAttachment {
+        //             view: &game_renderer.depth_texture.texture_view,
+        //             depth_ops: Some(Operations {
+        //                 load: LoadOp::Clear(1.0),
+        //                 store: true,
+        //             }),
+        //             stencil_ops: None,
+        //         }),
+        //     });
+        //
+        //     game_renderer.render(&mut render_pass);
+        //
+        //     debug_ui_renderer
+        //         .render(self, &mut render_pass, debug_ui_render_state)
+        //         .unwrap();
+        // }
+        //
+        // self.queue
+        //     .submit(core::iter::once(command_encoder.finish()));
+        //
+        // texture_to_present.present();
     }
 }

@@ -1,8 +1,8 @@
-use crate::game;
+
 use crate::game::camera::Camera;
 use crate::renderer::context::RenderContext;
 use crate::renderer::util::any_sized_as_u8_slice;
-use nalgebra::{Matrix4, Perspective3, Point3, Vector3};
+use nalgebra::{Matrix4, Point3};
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{BindingResource, Buffer};
 use winit::window::Window;
@@ -44,8 +44,8 @@ impl CameraRenderer {
 }
 
 pub struct CameraBuffer {
-    pub(crate) projection: Matrix4<f32>,
-    pub(crate) view: Matrix4<f32>,
-    pub(crate) position: Point3<f32>,
-    pub(crate) _p0: f32,
+    pub projection: Matrix4<f32>,
+    pub view: Matrix4<f32>,
+    pub position: Point3<f32>,
+    pub _p0: f32,
 }

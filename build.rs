@@ -1,6 +1,6 @@
 use glob::{glob, GlobError, PatternError};
+use shaderc::CompileOptions;
 use shaderc::OptimizationLevel;
-use shaderc::{CompileOptions};
 
 use std::fs::{read_to_string, write};
 use std::path::PathBuf;
