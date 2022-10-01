@@ -15,7 +15,7 @@ impl Camera {
 
     pub fn new() -> Self {
         Self {
-            position: Point3::from_slice(&[0.0, 0.0, 2.0]),
+            position: Point3::from_slice(&[0.0, 0.0, 5.0]),
             yaw: -90.0,
             pitch: 0.0,
             sensitivity: 1.0,
@@ -64,7 +64,7 @@ impl Camera {
     }
 
     pub fn get_projection_matrix(&self, aspect_ratio: f32) -> Matrix4<f32> {
-        Perspective3::new(aspect_ratio, 90.0f32.to_radians(), 0.0, 999999999.0).to_homogeneous()
+        Perspective3::new(aspect_ratio, 90.0f32.to_radians(), 0.1, 100.0).to_homogeneous()
     }
 
     pub fn get_yaw_pitch(&self) -> (f32, f32) {

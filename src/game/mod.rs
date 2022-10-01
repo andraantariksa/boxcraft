@@ -1,4 +1,3 @@
-pub mod block;
 pub mod camera;
 pub mod debug_ui;
 pub mod player;
@@ -17,7 +16,7 @@ use crate::renderer::Renderer;
 
 use std::time::Instant;
 
-use crate::game::world::WorldBlocks;
+use crate::game::world::World;
 use winit::event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
 
@@ -58,7 +57,7 @@ impl Game {
 
     pub fn run_loop(mut self) {
         {
-            let mut world_blocks = self.systems.get_resources().get::<WorldBlocks>().unwrap();
+            let world_blocks = self.systems.get_resources().get::<World>().unwrap();
             let block_raw_instances = world_blocks.get_block_raw_instances();
             self.renderer.game_renderer.update_blocks(
                 &self.renderer.render_context,
@@ -143,11 +142,7 @@ impl Game {
                             !self.renderer.game_renderer.is_wireframe_only(),
                         );
                     };
-                    let mut world_blocks = self
-                        .systems
-                        .get_resources()
-                        .get_mut::<WorldBlocks>()
-                        .unwrap();
+                    let mut world_blocks = self.systems.get_resources().get_mut::<World>().unwrap();
                     self.renderer.render(
                         &*camera,
                         &time_elapsed,

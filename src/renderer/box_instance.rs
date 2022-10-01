@@ -1,5 +1,5 @@
-use crate::game::block::Block;
 use crate::game::transform::Transform;
+use crate::game::world::block::Block;
 use crate::renderer::vertex::VertexLike;
 use nalgebra::{Matrix4, Point2, Vector4};
 use std::mem;

@@ -6,14 +6,14 @@ use crate::renderer::util::{any_sized_as_u8_slice, any_slice_as_u8_slice};
 use crate::renderer::vertex::{Vertex, VertexLike};
 use nalgebra::{Matrix4, Point3, Vector3};
 
-use crate::game::block::BlockRawInstance;
+use crate::game::world::block::BlockRawInstance;
 use crate::renderer::texture::Texture;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{
     include_spirv, BlendComponent, BlendState, Buffer, BufferUsages, ColorTargetState, ColorWrites,
     CompareFunction, DepthStencilState, Face, FragmentState, FrontFace, MultisampleState,
-    PipelineLayout, PolygonMode, RenderPipelineDescriptor, ShaderModule, ShaderModuleDescriptor,
-    ShaderStages, TextureFormat, VertexBufferLayout,
+    PipelineLayout, PolygonMode, RenderPass, RenderPipelineDescriptor, ShaderModule,
+    ShaderModuleDescriptor, ShaderStages, TextureFormat, VertexBufferLayout,
 };
 
 pub struct GameRenderer {
@@ -27,10 +27,11 @@ pub struct GameRenderer {
     block_instances_buffer: Buffer,
     fragment_shader_module: ShaderModule,
     vertex_shader_module: ShaderModule,
-    color_targets_state: [ColorTargetState; 1],
+    color_targets_state: [Option<ColorTargetState>; 1],
     block_instance_vertex_buffer_layout: [VertexBufferLayout<'static>; 2],
     cubes_pipeline_layout: PipelineLayout,
 
+    texture_atlas: Texture,
     pub depth_texture: Texture,
 
     blocks_total: u32,
@@ -81,7 +82,7 @@ impl GameRenderer {
         let vertex_shader_module =
             render_context
                 .device
-                .create_shader_module(&ShaderModuleDescriptor {
+                .create_shader_module(ShaderModuleDescriptor {
                     label: Some("Shader module vert"),
                     source: include_spirv!("./shaders/vertex.vert.spv").source,
                 });
@@ -89,7 +90,7 @@ impl GameRenderer {
         let fragment_shader_module =
             render_context
                 .device
-                .create_shader_module(&ShaderModuleDescriptor {
+                .create_shader_module(ShaderModuleDescriptor {
                     label: Some("Shader module frag"),
                     source: include_spirv!("./shaders/fragment.frag.spv").source,
                 });
@@ -218,9 +219,7 @@ impl GameRenderer {
                 .device
                 .create_buffer_init(&BufferInitDescriptor {
                     label: Some("Block instances buffer init"),
-                    contents: any_sized_as_u8_slice(&Matrix4::new(
-                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    )),
+                    contents: any_sized_as_u8_slice(&()),
                     usage: BufferUsages::VERTEX,
                 });
         let cubes_vertices_buffer =
@@ -245,14 +244,14 @@ impl GameRenderer {
             BlockRawInstance::vertex_buffer_layout(),
         ];
 
-        let color_targets_state = [ColorTargetState {
+        let color_targets_state = [Some(ColorTargetState {
             format: TextureFormat::Bgra8UnormSrgb,
             blend: Some(BlendState {
                 color: BlendComponent::REPLACE,
                 alpha: BlendComponent::REPLACE,
             }),
             write_mask: ColorWrites::all(),
-        }];
+        })];
 
         let depth_texture = Texture::new_depth(&render_context);
         let render_pipeline_descriptor = RenderPipelineDescriptor {
@@ -272,6 +271,7 @@ impl GameRenderer {
                 polygon_mode: PolygonMode::Fill,
                 conservative: false,
             },
+            // depth_stencil: None,
             depth_stencil: Some(DepthStencilState {
                 format: Texture::DEPTH_FORMAT,
                 depth_write_enabled: true,
@@ -296,6 +296,9 @@ impl GameRenderer {
             .device
             .create_render_pipeline(&render_pipeline_descriptor);
 
+        let texture_atlas =
+            Texture::load_bytes(render_context, include_bytes!("../assets/atlas.png")).unwrap();
+
         Self {
             camera_renderer,
             camera_bind_group,
@@ -314,6 +317,7 @@ impl GameRenderer {
             block_instance_vertex_buffer_layout, // render_pipeline_descriptor,
             blocks_total: 0,
             depth_texture,
+            texture_atlas,
         }
     }
 
@@ -338,7 +342,7 @@ impl GameRenderer {
         self.camera_renderer.update(render_context, window, camera);
     }
 
-    pub fn render<'b>(&'b self, render_pass: &mut wgpu::RenderPass<'b>) {
+    pub fn render<'b>(&'b self, render_pass: &mut RenderPass<'b>) {
         render_pass.set_pipeline(&self.render_pipeline);
 
         render_pass.set_bind_group(0, &self.camera_bind_group, &[]);

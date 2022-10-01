@@ -1,7 +1,20 @@
 use crate::game::transform::Transform;
+use bitflags::bitflags;
 use legion::system;
 use nalgebra::{Matrix4, Vector, Vector3};
 use std::time::Duration;
+
+bitflags! {
+    struct Neighbor: u8 {
+        const FRONT = 0b000001;
+        const BACK = 0b000010;
+        const RIGHT = 0b000100;
+        const LEFT = 0b001000;
+        const TOP = 0b010000;
+        const BOTTOM = 0b100000;
+        // const ABC = Self::A.bits | Self::B.bits | Self::C.bits;
+    }
+}
 
 #[derive(Clone)]
 pub struct Block {

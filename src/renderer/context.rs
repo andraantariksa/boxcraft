@@ -2,12 +2,12 @@ use crate::game::camera::Camera;
 use crate::game::debug_ui::DebugUIRenderState;
 use crate::misc::window::Window;
 use crate::renderer::debug_ui_renderer::DebugUIRenderer;
-use crate::renderer::game_renderer::GameRenderer;
 
-use crate::game::world::WorldBlocks;
-use wgpu::{Color, CommandEncoder, CommandEncoderDescriptor, Instance, LoadOp, Operations, PresentMode, RenderPassColorAttachment, RenderPassDepthStencilAttachment, RenderPassDescriptor, Surface, SurfaceConfiguration, SurfaceTexture, TextureFormat, TextureView, TextureViewDescriptor};
+use wgpu::{
+    Color, CommandEncoder, CommandEncoderDescriptor, Instance, PresentMode, Surface,
+    SurfaceConfiguration, SurfaceTexture, TextureFormat, TextureView, TextureViewDescriptor,
+};
 use winit::dpi::PhysicalSize;
-use crate::renderer::texture::Texture;
 
 pub struct RenderContext {
     pub render_surface: Surface,
@@ -46,7 +46,7 @@ impl RenderContext {
             format: TextureFormat::Bgra8UnormSrgb,
             width: window_size.width,
             height: window_size.height,
-            present_mode: PresentMode::Immediate,
+            present_mode: PresentMode::Fifo,
         };
         render_surface.configure(&device, &render_surface_config);
 
@@ -66,9 +66,7 @@ impl RenderContext {
             .configure(&self.device, &self.render_surface_config);
     }
 
-    pub fn create_command_encoder(
-        &self
-    ) -> (CommandEncoder, SurfaceTexture, TextureView) {
+    pub fn create_command_encoder(&self) -> (CommandEncoder, SurfaceTexture, TextureView) {
         let texture_to_present = self.render_surface.get_current_texture().unwrap();
         let texture_view_to_present = texture_to_present
             .texture

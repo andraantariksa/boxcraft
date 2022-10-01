@@ -1,4 +1,3 @@
-use crate::game::block::Block;
 use crate::renderer::box_instance::BoxInstance;
 use nalgebra::{Matrix4, Point2, Rotation3, Translation, Translation3, Vector3};
 

@@ -3,7 +3,7 @@ use crate::game::camera::Camera;
 use crate::game::player::Player;
 use crate::misc::input::InputManager;
 
-use crate::game::world::WorldBlocks;
+use crate::game::world::World as WorldEnvironment;
 use atomic_refcell::AtomicRefMut;
 use legion::{Resources, Schedule, World};
 use std::time::Duration;
@@ -23,7 +23,7 @@ impl Systems {
         let mut world = World::default();
         let player = Player::new();
 
-        resources.insert(WorldBlocks::from(&player));
+        resources.insert(WorldEnvironment::from(&player));
 
         world.push((player,));
 

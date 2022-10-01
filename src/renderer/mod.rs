@@ -7,9 +7,12 @@ use crate::renderer::debug_ui_renderer::DebugUIRenderer;
 use crate::renderer::game_renderer::GameRenderer;
 
 use std::time::Duration;
-use wgpu::{Color, LoadOp, Operations, RenderPassColorAttachment, RenderPassDepthStencilAttachment, RenderPassDescriptor};
+use wgpu::{
+    Color, LoadOp, Operations, RenderPassColorAttachment, RenderPassDepthStencilAttachment,
+    RenderPassDescriptor,
+};
 
-use crate::game::world::WorldBlocks;
+use crate::game::world::World;
 use crate::renderer::texture::Texture;
 use winit::dpi::PhysicalSize;
 
@@ -50,16 +53,18 @@ impl Renderer {
         _time_elapsed: &Duration,
         window: &Window,
         debug_ui_render_state: &DebugUIRenderState,
-        world_blocks: &WorldBlocks,
+        world_blocks: &World,
     ) {
-        self.game_renderer.prerender(&self.render_context, window, camera);
+        self.game_renderer
+            .prerender(&self.render_context, window, camera);
 
-        let (mut command_encoder, texture, texture_view) = self.render_context.create_command_encoder();
+        let (mut command_encoder, texture, texture_view) =
+            self.render_context.create_command_encoder();
 
         {
             let mut render_pass = command_encoder.begin_render_pass(&RenderPassDescriptor {
                 label: Some("Render pass descriptor"),
-                color_attachments: &[RenderPassColorAttachment {
+                color_attachments: &[Some(RenderPassColorAttachment {
                     view: &texture_view,
                     resolve_target: None,
                     ops: Operations {
@@ -71,7 +76,7 @@ impl Renderer {
                             a: 1.0,
                         }),
                     },
-                }],
+                })],
                 depth_stencil_attachment: Some(RenderPassDepthStencilAttachment {
                     view: &self.game_renderer.depth_texture.texture_view,
                     depth_ops: Some(Operations {
@@ -88,22 +93,27 @@ impl Renderer {
         {
             let mut render_pass = command_encoder.begin_render_pass(&RenderPassDescriptor {
                 label: Some("Render pass descriptor"),
-                color_attachments: &[RenderPassColorAttachment {
+                color_attachments: &[Some(RenderPassColorAttachment {
                     view: &texture_view,
                     resolve_target: None,
                     ops: Operations {
                         store: true,
                         load: LoadOp::Load,
                     },
-                }],
+                })],
                 depth_stencil_attachment: None,
             });
             self.debug_ui_renderer
-                .render(&self.render_context, &mut render_pass, debug_ui_render_state)
+                .render(
+                    &self.render_context,
+                    &mut render_pass,
+                    debug_ui_render_state,
+                )
                 .unwrap();
         }
 
-        self.render_context.queue
+        self.render_context
+            .queue
             .submit(core::iter::once(command_encoder.finish()));
 
         texture.present();

@@ -21,7 +21,7 @@ pub struct Texture {
 impl Texture {
     pub const DEPTH_FORMAT: TextureFormat = TextureFormat::Depth32Float;
 
-    pub fn load_bytes(context: RenderContext, buffer: &[u8]) -> Result<Texture, RendererError> {
+    pub fn load_bytes(context: &RenderContext, buffer: &[u8]) -> Result<Texture, RendererError> {
         let image = image::load_from_memory(buffer).unwrap().to_rgba8();
         let (image_width, image_height) = image.dimensions();
 
@@ -107,17 +107,16 @@ impl Texture {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
         });
 
-        let texture_view = texture.create_view(&TextureViewDescriptor::default());
-        // &TextureViewDescriptor {
-        //     label: Some("Create texture view"),
-        //     format: Some(Self::DEPTH_FORMAT),
-        //     dimension: Some(TextureViewDimension::D2),
-        //     aspect: TextureAspect::All,
-        //     base_mip_level: 0,
-        //     mip_level_count: None,
-        //     base_array_layer: 0,
-        //     array_layer_count: None,
-        // });
+        let texture_view = texture.create_view(&TextureViewDescriptor {
+            label: Some("Create texture view"),
+            format: Some(Self::DEPTH_FORMAT),
+            dimension: Some(TextureViewDimension::D2),
+            aspect: TextureAspect::All,
+            base_mip_level: 0,
+            mip_level_count: None,
+            base_array_layer: 0,
+            array_layer_count: None,
+        });
 
         let sampler = render_context.device.create_sampler(&SamplerDescriptor {
             label: Some("Create sampler"),
