@@ -1,10 +1,11 @@
-use nalgebra::{Point3, Vector3};
+use nalgebra::{Point3, Vector2, Vector3};
 use std::mem;
 use wgpu::{BufferAddress, VertexAttribute, VertexBufferLayout, VertexFormat, VertexStepMode};
 
 pub struct Vertex {
     pub position: Point3<f32>,
     pub normal: Vector3<f32>,
+    pub texture_coordinate: Vector2<f32>,
 }
 
 pub trait VertexLike {
@@ -26,6 +27,11 @@ impl VertexLike for Vertex {
                     format: VertexFormat::Float32x3,
                     offset: mem::size_of::<Vector3<f32>>() as BufferAddress,
                     shader_location: 1,
+                },
+                VertexAttribute {
+                    format: VertexFormat::Float32x3,
+                    offset: (mem::size_of::<Vector3<f32>>() * 2) as BufferAddress,
+                    shader_location: 2,
                 },
             ],
         }

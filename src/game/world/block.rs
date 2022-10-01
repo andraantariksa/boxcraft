@@ -1,7 +1,7 @@
 use crate::game::transform::Transform;
 use bitflags::bitflags;
 use legion::system;
-use nalgebra::{Matrix4, Vector, Vector3};
+use nalgebra::{Matrix4, Vector, Vector2, Vector3};
 use std::time::Duration;
 
 bitflags! {
@@ -30,21 +30,24 @@ impl Block {
     }
 }
 
-pub struct BlockRawInstance {
+pub struct FacesRawInstance {
     model_transformation: Matrix4<f32>,
+    texture_pos: Vector2<i32>,
 }
 
-impl BlockRawInstance {
+impl FacesRawInstance {
     pub fn from(block: &Block, transform: &Transform) -> Self {
+        // let mut faces = vec![];
         Self {
             model_transformation: transform.get_transformation_matrix(),
+            texture_pos: Vector2::new(1, 0),
         }
     }
 
     pub fn vertex_buffer_layout<'a>() -> wgpu::VertexBufferLayout<'a> {
         use std::mem;
         wgpu::VertexBufferLayout {
-            array_stride: mem::size_of::<BlockRawInstance>() as wgpu::BufferAddress,
+            array_stride: mem::size_of::<FacesRawInstance>() as wgpu::BufferAddress,
             step_mode: wgpu::VertexStepMode::Instance,
             attributes: &[
                 wgpu::VertexAttribute {
@@ -66,6 +69,11 @@ impl BlockRawInstance {
                     offset: mem::size_of::<[f32; 12]>() as wgpu::BufferAddress,
                     shader_location: 13,
                     format: wgpu::VertexFormat::Float32x4,
+                },
+                wgpu::VertexAttribute {
+                    offset: mem::size_of::<[f32; 16]>() as wgpu::BufferAddress,
+                    shader_location: 14,
+                    format: wgpu::VertexFormat::Sint32x2,
                 },
             ],
         }

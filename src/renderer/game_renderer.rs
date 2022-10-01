@@ -4,21 +4,25 @@ use crate::renderer::camera::CameraRenderer;
 use crate::renderer::context::RenderContext;
 use crate::renderer::util::{any_sized_as_u8_slice, any_slice_as_u8_slice};
 use crate::renderer::vertex::{Vertex, VertexLike};
-use nalgebra::{Matrix4, Point3, Vector3};
+use nalgebra::{Matrix4, Point3, Vector2, Vector3};
 
-use crate::game::world::block::BlockRawInstance;
+use crate::game::world::block::FacesRawInstance;
 use crate::renderer::texture::Texture;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{
-    include_spirv, BlendComponent, BlendState, Buffer, BufferUsages, ColorTargetState, ColorWrites,
-    CompareFunction, DepthStencilState, Face, FragmentState, FrontFace, MultisampleState,
-    PipelineLayout, PolygonMode, RenderPass, RenderPipelineDescriptor, ShaderModule,
-    ShaderModuleDescriptor, ShaderStages, TextureFormat, VertexBufferLayout,
+    include_spirv, BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayoutDescriptor,
+    BindGroupLayoutEntry, BindingResource, BindingType, BlendComponent, BlendState, Buffer,
+    BufferBindingType, BufferUsages, ColorTargetState, ColorWrites, CompareFunction,
+    DepthStencilState, Face, FragmentState, FrontFace, MultisampleState, PipelineLayout,
+    PolygonMode, RenderPass, RenderPipelineDescriptor, SamplerBindingType, ShaderModule,
+    ShaderModuleDescriptor, ShaderStages, TextureFormat, TextureSampleType, TextureViewDimension,
+    VertexBufferLayout,
 };
 
 pub struct GameRenderer {
     camera_renderer: CameraRenderer,
-    camera_bind_group: wgpu::BindGroup,
+    camera_bind_group: BindGroup,
+    texture_bind_group: BindGroup,
     wireframe_only: bool,
     render_pipeline: wgpu::RenderPipeline,
     // render_pipeline_descriptor: RenderPipelineDescriptor<'static>,
@@ -44,7 +48,7 @@ impl GameRenderer {
         let camera_bind_group_layout =
             render_context
                 .device
-                .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                .create_bind_group_layout(&BindGroupLayoutDescriptor {
                     label: Some("Create bind group layout: Bind group layout descriptor"),
                     entries: &[wgpu::BindGroupLayoutEntry {
                         binding: 0,
@@ -70,12 +74,81 @@ impl GameRenderer {
                     }],
                 });
 
-        let cube_pipeline_layout =
+        let texture_atlas =
+            Texture::load_bytes(render_context, include_bytes!("../assets/atlas.png")).unwrap();
+
+        let texture_bind_group_layout =
+            render_context
+                .device
+                .create_bind_group_layout(&BindGroupLayoutDescriptor {
+                    label: Some("Create bind group layout: Bind group layout descriptor"),
+                    entries: &[
+                        BindGroupLayoutEntry {
+                            binding: 0,
+                            visibility: ShaderStages::FRAGMENT,
+                            ty: BindingType::Texture {
+                                sample_type: TextureSampleType::Float { filterable: true },
+                                view_dimension: TextureViewDimension::D2,
+                                multisampled: false,
+                            },
+                            count: None,
+                        },
+                        BindGroupLayoutEntry {
+                            binding: 1,
+                            visibility: ShaderStages::FRAGMENT,
+                            ty: BindingType::Sampler(SamplerBindingType::Filtering),
+                            count: None,
+                        },
+                        BindGroupLayoutEntry {
+                            binding: 2,
+                            visibility: ShaderStages::FRAGMENT,
+                            ty: BindingType::Buffer {
+                                ty: BufferBindingType::Uniform,
+                                has_dynamic_offset: false,
+                                min_binding_size: None,
+                            },
+                            count: None,
+                        },
+                    ],
+                });
+
+        let texture_atlas_size = (16, 16);
+        let texture_atlas_size_buffer =
+            render_context
+                .device
+                .create_buffer_init(&BufferInitDescriptor {
+                    label: None,
+                    contents: any_sized_as_u8_slice(&texture_atlas_size),
+                    usage: BufferUsages::UNIFORM,
+                });
+
+        let texture_bind_group = render_context
+            .device
+            .create_bind_group(&BindGroupDescriptor {
+                label: Some("Create bind group"),
+                layout: &texture_bind_group_layout,
+                entries: &[
+                    BindGroupEntry {
+                        binding: 0,
+                        resource: BindingResource::TextureView(&texture_atlas.texture_view),
+                    },
+                    BindGroupEntry {
+                        binding: 1,
+                        resource: BindingResource::Sampler(&texture_atlas.sampler),
+                    },
+                    BindGroupEntry {
+                        binding: 2,
+                        resource: texture_atlas_size_buffer.as_entire_binding(),
+                    },
+                ],
+            });
+
+        let game_pipeline_layout =
             render_context
                 .device
                 .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                     label: Some("Create pipeline layout"),
-                    bind_group_layouts: &[&camera_bind_group_layout],
+                    bind_group_layouts: &[&camera_bind_group_layout, &texture_bind_group_layout],
                     push_constant_ranges: &[],
                 });
 
@@ -99,119 +172,28 @@ impl GameRenderer {
             // Front
             // 0, 1, 2 & 0, 2, 3
             Vertex {
-                position: Point3::new(-0.5, -0.5, 0.5),
+                position: Point3::new(-0.5, -0.5, 0.0),
                 normal: Vector3::new(0.0, 0.0, 1.0),
+                texture_coordinate: Vector2::new(1.0, 1.0),
             },
             Vertex {
-                position: Point3::new(0.5, -0.5, 0.5),
+                position: Point3::new(0.5, -0.5, 0.0),
                 normal: Vector3::new(0.0, 0.0, 1.0),
+                texture_coordinate: Vector2::new(0.0, 1.0),
             },
             Vertex {
-                position: Point3::new(0.5, 0.5, 0.5),
+                position: Point3::new(0.5, 0.5, 0.0),
                 normal: Vector3::new(0.0, 0.0, 1.0),
+                texture_coordinate: Vector2::new(0.0, 0.0),
             },
             Vertex {
-                position: Point3::new(-0.5, 0.5, 0.5),
+                position: Point3::new(-0.5, 0.5, 0.0),
                 normal: Vector3::new(0.0, 0.0, 1.0),
-            },
-            // Right
-            // 0, 2, 1 & 1, 3, 2
-            Vertex {
-                position: Point3::new(0.5, 0.5, 0.5),
-                normal: Vector3::new(1.0, 0.0, 0.0),
-            },
-            Vertex {
-                position: Point3::new(0.5, -0.5, 0.5),
-                normal: Vector3::new(1.0, 0.0, 0.0),
-            },
-            Vertex {
-                position: Point3::new(0.5, 0.5, -0.5),
-                normal: Vector3::new(1.0, 0.0, 0.0),
-            },
-            Vertex {
-                position: Point3::new(0.5, -0.5, -0.5),
-                normal: Vector3::new(1.0, 0.0, 0.0),
-            },
-            // Left
-            // 1, 0, 3 & 2, 3, 0
-            Vertex {
-                position: Point3::new(-0.5, 0.5, 0.5),
-                normal: Vector3::new(-1.0, 0.0, 0.0),
-            },
-            Vertex {
-                position: Point3::new(-0.5, -0.5, 0.5),
-                normal: Vector3::new(-1.0, 0.0, 0.0),
-            },
-            Vertex {
-                position: Point3::new(-0.5, 0.5, -0.5),
-                normal: Vector3::new(-1.0, 0.0, 0.0),
-            },
-            Vertex {
-                position: Point3::new(-0.5, -0.5, -0.5),
-                normal: Vector3::new(-1.0, 0.0, 0.0),
-            },
-            // Back
-            // 1, 0, 3 & 1, 3, 2
-            Vertex {
-                position: Point3::new(-0.5, -0.5, -0.5),
-                normal: Vector3::new(0.0, 0.0, -1.0),
-            },
-            Vertex {
-                position: Point3::new(0.5, -0.5, -0.5),
-                normal: Vector3::new(0.0, 0.0, -1.0),
-            },
-            Vertex {
-                position: Point3::new(0.5, 0.5, -0.5),
-                normal: Vector3::new(0.0, 0.0, -1.0),
-            },
-            Vertex {
-                position: Point3::new(-0.5, 0.5, -0.5),
-                normal: Vector3::new(0.0, 0.0, -1.0),
-            },
-            // Top
-            // 0, 2, 1 & 1, 2, 3
-            Vertex {
-                position: Point3::new(0.5, 0.5, 0.5),
-                normal: Vector3::new(0.0, 1.0, 0.0),
-            },
-            Vertex {
-                position: Point3::new(-0.5, 0.5, 0.5),
-                normal: Vector3::new(0.0, 1.0, 0.0),
-            },
-            Vertex {
-                position: Point3::new(0.5, 0.5, -0.5),
-                normal: Vector3::new(0.0, 1.0, 0.0),
-            },
-            Vertex {
-                position: Point3::new(-0.5, 0.5, -0.5),
-                normal: Vector3::new(0.0, 1.0, 0.0),
-            },
-            // Bottom
-            // 0, 1, 3 & 0, 3, 2
-            Vertex {
-                position: Point3::new(0.5, -0.5, 0.5),
-                normal: Vector3::new(0.0, -1.0, 0.0),
-            },
-            Vertex {
-                position: Point3::new(-0.5, -0.5, 0.5),
-                normal: Vector3::new(0.0, -1.0, 0.0),
-            },
-            Vertex {
-                position: Point3::new(0.5, -0.5, -0.5),
-                normal: Vector3::new(0.0, -1.0, 0.0),
-            },
-            Vertex {
-                position: Point3::new(-0.5, -0.5, -0.5),
-                normal: Vector3::new(0.0, -1.0, 0.0),
+                texture_coordinate: Vector2::new(1.0, 0.0),
             },
         ];
         let indices = [
             0u16, 1, 2, 0, 2, 3, // Front
-            13, 12, 15, 13, 15, 14, // Back
-            4, 5, 6, 5, 7, 6, // Right
-            9, 8, 11, 10, 11, 8, // Left
-            16, 18, 17, 17, 18, 19, // Top
-            20, 21, 23, 20, 23, 22, // Bottom
         ];
 
         let block_instances_buffer =
@@ -241,7 +223,7 @@ impl GameRenderer {
 
         let block_instance_vertex_buffer_layout = [
             Vertex::vertex_buffer_layout(),
-            BlockRawInstance::vertex_buffer_layout(),
+            FacesRawInstance::vertex_buffer_layout(),
         ];
 
         let color_targets_state = [Some(ColorTargetState {
@@ -256,7 +238,7 @@ impl GameRenderer {
         let depth_texture = Texture::new_depth(&render_context);
         let render_pipeline_descriptor = RenderPipelineDescriptor {
             label: Some("Create render pipeline: Render pipeline descriptor"),
-            layout: Some(&cube_pipeline_layout),
+            layout: Some(&game_pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &vertex_shader_module,
                 entry_point: "main",
@@ -296,14 +278,11 @@ impl GameRenderer {
             .device
             .create_render_pipeline(&render_pipeline_descriptor);
 
-        let texture_atlas =
-            Texture::load_bytes(render_context, include_bytes!("../assets/atlas.png")).unwrap();
-
         Self {
             camera_renderer,
             camera_bind_group,
             wireframe_only: render_pipeline_descriptor.primitive.polygon_mode != PolygonMode::Fill,
-            cubes_pipeline_layout: cube_pipeline_layout,
+            cubes_pipeline_layout: game_pipeline_layout,
             render_pipeline,
 
             cube_vertex_buffer: cubes_vertices_buffer,
@@ -318,13 +297,14 @@ impl GameRenderer {
             blocks_total: 0,
             depth_texture,
             texture_atlas,
+            texture_bind_group,
         }
     }
 
     pub fn update_blocks(
         &mut self,
         render_context: &RenderContext,
-        blocks: &Vec<BlockRawInstance>,
+        blocks: &Vec<FacesRawInstance>,
         blocks_total: u32,
     ) {
         self.blocks_total = blocks_total;
@@ -346,6 +326,7 @@ impl GameRenderer {
         render_pass.set_pipeline(&self.render_pipeline);
 
         render_pass.set_bind_group(0, &self.camera_bind_group, &[]);
+        render_pass.set_bind_group(1, &self.texture_bind_group, &[]);
 
         render_pass.set_vertex_buffer(0, self.cube_vertex_buffer.slice(..));
         render_pass.set_vertex_buffer(1, self.block_instances_buffer.slice(..));
@@ -355,7 +336,7 @@ impl GameRenderer {
             wgpu::IndexFormat::Uint16,
         );
 
-        render_pass.draw_indexed(0..6 * 6, 0, 0..self.blocks_total);
+        render_pass.draw_indexed(0..6, 0, 0..self.blocks_total);
     }
 
     pub fn is_wireframe_only(&self) -> bool {

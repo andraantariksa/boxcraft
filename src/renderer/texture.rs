@@ -13,9 +13,9 @@ use wgpu::{
 };
 
 pub struct Texture {
-    texture: WGPUTexture,
+    pub texture: WGPUTexture,
     pub texture_view: TextureView,
-    sampler: Sampler,
+    pub sampler: Sampler,
 }
 
 impl Texture {
@@ -37,7 +37,7 @@ impl Texture {
             mip_level_count: 1,
             sample_count: 1,
             dimension: TextureDimension::D2,
-            format: TextureFormat::Bgra8UnormSrgb,
+            format: TextureFormat::Rgba8UnormSrgb,
             usage: wgpu::TextureUsages::COPY_DST | wgpu::TextureUsages::TEXTURE_BINDING,
         });
 
@@ -59,7 +59,7 @@ impl Texture {
 
         let texture_view = texture.create_view(&TextureViewDescriptor {
             label: Some("Create texture view"),
-            format: Some(TextureFormat::Bgra8UnormSrgb),
+            format: Some(TextureFormat::Rgba8UnormSrgb),
             dimension: Some(TextureViewDimension::D2),
             aspect: TextureAspect::All,
             base_mip_level: 0,
