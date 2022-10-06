@@ -143,6 +143,14 @@ impl Game {
                         );
                     };
                     let mut world_blocks = self.systems.get_resources().get_mut::<World>().unwrap();
+                    if world_blocks.update(&camera) {
+                        let world_block = world_blocks.get_block_raw_instances();
+                        self.renderer.game_renderer.update_blocks(
+                            &self.renderer.render_context,
+                            &world_block,
+                            world_block.len() as u32,
+                        );
+                    }
                     self.renderer.render(
                         &*camera,
                         &time_elapsed,

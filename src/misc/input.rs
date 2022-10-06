@@ -64,6 +64,7 @@ impl InputManager {
 
                     self.mouse_movement += center - new_pos;
 
+                    #[warn(unused_must_use)]
                     window.set_cursor_position(PhysicalPosition {
                         x: center.x,
                         y: center.y,

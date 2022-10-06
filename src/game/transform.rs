@@ -1,5 +1,4 @@
-use crate::renderer::box_instance::BoxInstance;
-use nalgebra::{Matrix4, Point2, Rotation3, Translation, Translation3, Vector3};
+use nalgebra::{Matrix4, Rotation3, Translation3};
 
 pub struct Transform {
     pub rotation: Rotation3<f32>,

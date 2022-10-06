@@ -1,6 +1,5 @@
 use crate::game::transform::Transform;
 use crate::game::world::block::{Block, FacesRawInstance};
-use crate::game::world::World;
 use nalgebra::{Rotation3, Translation3, Vector3};
 
 #[derive(Clone)]
@@ -9,13 +8,15 @@ pub struct Chunk {
 }
 
 impl Chunk {
-    pub const CHUNK_SIDE_SIZE: usize = 16;
-    pub const CHUNK_VERTICAL_SIZE: usize = 256;
+    pub const CHUNK_SIDE_BLOCK: usize = 16;
+    pub const CHUNK_VERTICAL_BLOCK: usize = 2;
+
+    pub const CHUNK_SIDE_SIZE: f32 = Self::CHUNK_SIDE_BLOCK as f32 * Block::SIZE;
 
     pub fn from(block: Option<Block>) -> Self {
         let mut blocks = vec![
-            vec![vec![block; Self::CHUNK_SIDE_SIZE]; Self::CHUNK_VERTICAL_SIZE];
-            Self::CHUNK_SIDE_SIZE
+            vec![vec![block; Self::CHUNK_SIDE_BLOCK]; Self::CHUNK_VERTICAL_BLOCK];
+            Self::CHUNK_SIDE_BLOCK
         ];
         for y_blocks in blocks.iter_mut() {
             for (y, z_blocks) in y_blocks.iter_mut().enumerate() {
@@ -30,26 +31,26 @@ impl Chunk {
     }
 
     pub fn get_total_blocks() -> usize {
-        Self::CHUNK_SIDE_SIZE * Self::CHUNK_SIDE_SIZE * Self::CHUNK_VERTICAL_SIZE
+        Self::CHUNK_SIDE_BLOCK * Self::CHUNK_SIDE_BLOCK * Self::CHUNK_VERTICAL_BLOCK
     }
 
     pub fn get_faces(&self, center_point: &Vector3<f32>) -> Vec<FacesRawInstance> {
         let mut blocks = Vec::<FacesRawInstance>::with_capacity(Self::get_total_blocks() * 6);
-        for x in 0..Self::CHUNK_SIDE_SIZE {
-            for y in 0..Self::CHUNK_VERTICAL_SIZE {
-                for z in 0..Self::CHUNK_SIDE_SIZE {
+        for x in 0..Self::CHUNK_SIDE_BLOCK {
+            for y in 0..Self::CHUNK_VERTICAL_BLOCK {
+                for z in 0..Self::CHUNK_SIDE_BLOCK {
                     let y_blocks = unsafe { self.blocks.get_unchecked(x) };
                     let z_blocks = unsafe { y_blocks.get_unchecked(y) };
                     let maybe_block = unsafe { z_blocks.get_unchecked(z) };
 
                     if let Some(block) = maybe_block {
-                        let yy = -(Self::CHUNK_VERTICAL_SIZE as f32 * Block::SIZE / 2.0)
+                        let yy = -(Self::CHUNK_VERTICAL_BLOCK as f32 * Block::SIZE / 2.0)
                             + Block::HALF_SIZE
                             + (Block::SIZE * y as f32);
-                        let xx = -(Self::CHUNK_SIDE_SIZE as f32 * Block::SIZE / 2.0)
+                        let xx = -(Self::CHUNK_SIDE_BLOCK as f32 * Block::SIZE / 2.0)
                             + Block::HALF_SIZE
                             + (Block::SIZE * x as f32);
-                        let zz = -(Self::CHUNK_SIDE_SIZE as f32 * Block::SIZE / 2.0)
+                        let zz = -(Self::CHUNK_SIDE_BLOCK as f32 * Block::SIZE / 2.0)
                             + Block::HALF_SIZE
                             + (Block::SIZE * z as f32);
 
@@ -60,10 +61,9 @@ impl Chunk {
                                 blocks.push(FacesRawInstance::from(
                                     block,
                                     &Transform {
-                                        translation: Translation3::new(
-                                            xx + Block::HALF_SIZE,
-                                            yy,
-                                            zz,
+                                        translation: Translation3::from(
+                                            Vector3::new(xx + Block::HALF_SIZE, yy, zz)
+                                                + center_point,
                                         ),
                                         rotation: Rotation3::new(Vector3::new(
                                             0.0,
@@ -78,7 +78,9 @@ impl Chunk {
                             blocks.push(FacesRawInstance::from(
                                 block,
                                 &Transform {
-                                    translation: Translation3::new(xx - Block::HALF_SIZE, yy, zz),
+                                    translation: Translation3::from(
+                                        Vector3::new(xx - Block::HALF_SIZE, yy, zz) + center_point,
+                                    ),
                                     rotation: Rotation3::new(Vector3::new(
                                         0.0,
                                         -std::f32::consts::FRAC_PI_2,
@@ -95,10 +97,9 @@ impl Chunk {
                                 blocks.push(FacesRawInstance::from(
                                     block,
                                     &Transform {
-                                        translation: Translation3::new(
-                                            xx,
-                                            yy + Block::HALF_SIZE,
-                                            zz,
+                                        translation: Translation3::from(
+                                            Vector3::new(xx, yy + Block::HALF_SIZE, zz)
+                                                + center_point,
                                         ),
                                         rotation: Rotation3::new(Vector3::new(
                                             -std::f32::consts::FRAC_PI_2,
@@ -113,7 +114,9 @@ impl Chunk {
                             blocks.push(FacesRawInstance::from(
                                 block,
                                 &Transform {
-                                    translation: Translation3::new(xx, yy - Block::HALF_SIZE, zz),
+                                    translation: Translation3::from(
+                                        Vector3::new(xx, yy - Block::HALF_SIZE, zz) + center_point,
+                                    ),
                                     rotation: Rotation3::new(Vector3::new(
                                         std::f32::consts::FRAC_PI_2,
                                         0.0,
@@ -128,7 +131,9 @@ impl Chunk {
                             blocks.push(FacesRawInstance::from(
                                 block,
                                 &Transform {
-                                    translation: Translation3::new(xx, yy, zz + Block::HALF_SIZE),
+                                    translation: Translation3::from(
+                                        Vector3::new(xx, yy, zz + Block::HALF_SIZE) + center_point,
+                                    ),
                                     rotation: Rotation3::new(Vector3::new(0.0, 0.0, 0.0)),
                                 },
                             ));
@@ -137,7 +142,9 @@ impl Chunk {
                             blocks.push(FacesRawInstance::from(
                                 block,
                                 &Transform {
-                                    translation: Translation3::new(xx, yy, zz - Block::HALF_SIZE),
+                                    translation: Translation3::from(
+                                        Vector3::new(xx, yy, zz - Block::HALF_SIZE) + center_point,
+                                    ),
                                     rotation: Rotation3::new(Vector3::new(
                                         0.0,
                                         std::f32::consts::PI,

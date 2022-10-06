@@ -4,7 +4,7 @@ use crate::game::player::Player;
 use crate::misc::input::InputManager;
 
 use crate::game::world::World as WorldEnvironment;
-use atomic_refcell::AtomicRefMut;
+
 use legion::{Resources, Schedule, World};
 use std::time::Duration;
 
@@ -17,13 +17,12 @@ pub struct Systems {
 impl Systems {
     pub fn new(input_manager: InputManager, camera: Camera) -> Self {
         let mut resources = Resources::default();
-        resources.insert(camera);
-        resources.insert(input_manager);
-
         let mut world = World::default();
         let player = Player::new();
 
-        resources.insert(WorldEnvironment::from(&player));
+        resources.insert(WorldEnvironment::from(&camera));
+        resources.insert(camera);
+        resources.insert(input_manager);
 
         world.push((player,));
 

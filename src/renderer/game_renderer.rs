@@ -4,7 +4,7 @@ use crate::renderer::camera::CameraRenderer;
 use crate::renderer::context::RenderContext;
 use crate::renderer::util::{any_sized_as_u8_slice, any_slice_as_u8_slice};
 use crate::renderer::vertex::{Vertex, VertexLike};
-use nalgebra::{Matrix4, Point3, Vector2, Vector3};
+use nalgebra::{Point3, Vector2, Vector3};
 
 use crate::game::world::block::FacesRawInstance;
 use crate::renderer::texture::Texture;
@@ -235,7 +235,7 @@ impl GameRenderer {
             write_mask: ColorWrites::all(),
         })];
 
-        let depth_texture = Texture::new_depth(&render_context);
+        let depth_texture = Texture::new_depth(render_context);
         let render_pipeline_descriptor = RenderPipelineDescriptor {
             label: Some("Create render pipeline: Render pipeline descriptor"),
             layout: Some(&game_pipeline_layout),

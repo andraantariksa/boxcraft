@@ -7,9 +7,8 @@ use std::num::NonZeroU32;
 
 use wgpu::{
     AddressMode, CompareFunction, Extent3d, FilterMode, ImageCopyTextureBase, ImageDataLayout,
-    Origin3d, Sampler, SamplerDescriptor, SurfaceConfiguration, Texture as WGPUTexture,
-    TextureAspect, TextureDescriptor, TextureDimension, TextureFormat, TextureView,
-    TextureViewDescriptor, TextureViewDimension,
+    Origin3d, Sampler, SamplerDescriptor, Texture as WGPUTexture, TextureAspect, TextureDescriptor,
+    TextureDimension, TextureFormat, TextureView, TextureViewDescriptor, TextureViewDimension,
 };
 
 pub struct Texture {

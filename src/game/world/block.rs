@@ -1,7 +1,7 @@
 use crate::game::transform::Transform;
 use bitflags::bitflags;
 use legion::system;
-use nalgebra::{Matrix4, Vector, Vector2, Vector3};
+use nalgebra::{Matrix4, Vector2};
 use std::time::Duration;
 
 bitflags! {
@@ -30,14 +30,14 @@ impl Block {
     }
 }
 
+#[warn(dead_code)]
 pub struct FacesRawInstance {
     model_transformation: Matrix4<f32>,
     texture_pos: Vector2<i32>,
 }
 
 impl FacesRawInstance {
-    pub fn from(block: &Block, transform: &Transform) -> Self {
-        // let mut faces = vec![];
+    pub fn from(_block: &Block, transform: &Transform) -> Self {
         Self {
             model_transformation: transform.get_transformation_matrix(),
             texture_pos: Vector2::new(1, 0),

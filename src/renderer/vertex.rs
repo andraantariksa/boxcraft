@@ -2,6 +2,7 @@ use nalgebra::{Point3, Vector2, Vector3};
 use std::mem;
 use wgpu::{BufferAddress, VertexAttribute, VertexBufferLayout, VertexFormat, VertexStepMode};
 
+#[warn(dead_code)]
 pub struct Vertex {
     pub position: Point3<f32>,
     pub normal: Vector3<f32>,

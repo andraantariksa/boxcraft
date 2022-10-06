@@ -52,7 +52,7 @@ fn main() -> BuildScriptResult<()> {
         .collect::<Vec<BuildScriptResult<_>>>()
         .into_iter()
         .collect::<BuildScriptResult<Vec<_>>>()?;
-    let mut compiler = shaderc::Compiler::new().unwrap();
+    let compiler = shaderc::Compiler::new().unwrap();
     let mut compile_options = CompileOptions::new().unwrap();
     // compile_options.set_include_callback(
     //     |requested_source, _include_type, _requesting_source, include_depth| {

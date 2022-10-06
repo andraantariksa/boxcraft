@@ -13,11 +13,8 @@ use wgpu::{
 };
 
 use crate::game::world::World;
-use crate::renderer::texture::Texture;
 use winit::dpi::PhysicalSize;
 
-pub mod block;
-pub mod box_instance;
 pub mod camera;
 pub mod context;
 pub mod debug_ui_renderer;
@@ -37,7 +34,7 @@ pub struct Renderer {
 impl Renderer {
     pub async fn new(window: &Window, camera: &Camera, debug_ui: &mut DebugUI) -> Self {
         let render_context = RenderContext::new(window).await;
-        let game_renderer = GameRenderer::new(&render_context, &*window, camera);
+        let game_renderer = GameRenderer::new(&render_context, window, camera);
         let debug_ui_renderer = DebugUIRenderer::new(&render_context, debug_ui);
 
         Self {
@@ -53,7 +50,7 @@ impl Renderer {
         _time_elapsed: &Duration,
         window: &Window,
         debug_ui_render_state: &DebugUIRenderState,
-        world_blocks: &World,
+        _world_blocks: &World,
     ) {
         self.game_renderer
             .prerender(&self.render_context, window, camera);

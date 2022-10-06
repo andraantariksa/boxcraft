@@ -1,10 +1,10 @@
-use crate::game::camera::Camera;
-use crate::game::debug_ui::DebugUIRenderState;
+
+
 use crate::misc::window::Window;
-use crate::renderer::debug_ui_renderer::DebugUIRenderer;
+
 
 use wgpu::{
-    Color, CommandEncoder, CommandEncoderDescriptor, Instance, PresentMode, Surface,
+    CommandEncoder, CommandEncoderDescriptor, Instance, PresentMode, Surface,
     SurfaceConfiguration, SurfaceTexture, TextureFormat, TextureView, TextureViewDescriptor,
 };
 use winit::dpi::PhysicalSize;
