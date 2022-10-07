@@ -1,11 +1,8 @@
-
-
 use crate::misc::window::Window;
 
-
 use wgpu::{
-    CommandEncoder, CommandEncoderDescriptor, Instance, PresentMode, Surface,
-    SurfaceConfiguration, SurfaceTexture, TextureFormat, TextureView, TextureViewDescriptor,
+    CommandEncoder, CommandEncoderDescriptor, Instance, PresentMode, Surface, SurfaceConfiguration,
+    SurfaceTexture, TextureFormat, TextureView, TextureViewDescriptor,
 };
 use winit::dpi::PhysicalSize;
 
@@ -41,7 +38,7 @@ impl RenderContext {
             .unwrap();
 
         let window_size = window.inner_size();
-        let render_surface_config = wgpu::SurfaceConfiguration {
+        let render_surface_config = SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
             format: TextureFormat::Bgra8UnormSrgb,
             width: window_size.width,

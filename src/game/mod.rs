@@ -96,9 +96,16 @@ impl Game {
                         self.is_cursor_locked = !self.is_cursor_locked;
                         self.window.set_cursor_grab(self.is_cursor_locked).unwrap();
                     }
-                    WindowEvent::Resized(_) => {
-                        self.window.on_resized();
-                        self.renderer.resize(&self.window.inner_size());
+                    WindowEvent::Resized(new_inner_size) => {
+                        self.window.on_resized(&new_inner_size);
+                        self.renderer.resize(&new_inner_size);
+                    }
+                    WindowEvent::ScaleFactorChanged {
+                        scale_factor,
+                        new_inner_size,
+                    } => {
+                        self.window.on_resized(&new_inner_size);
+                        self.renderer.resize(*new_inner_size);
                     }
                     rest_window_event => {
                         let mut input_manager = self

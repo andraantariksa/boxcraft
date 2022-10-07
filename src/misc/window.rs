@@ -25,10 +25,8 @@ impl Window {
         }
     }
 
-    pub fn on_resized(&mut self) {
-        let window_inner_size = self.window.inner_size();
-        let aspect_ratio = window_inner_size.width as f32 / window_inner_size.height as f32;
-        self.aspect_ratio = aspect_ratio;
+    pub fn on_resized(&mut self, window_inner_size: &PhysicalSize<u32>) {
+        self.aspect_ratio = window_inner_size.width as f32 / window_inner_size.height as f32;
     }
 
     pub fn aspect_ratio(&self) -> f32 {
