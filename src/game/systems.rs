@@ -1,4 +1,6 @@
 use crate::game::camera::Camera;
+use parking_lot::Mutex;
+use std::sync::Arc;
 
 use crate::game::player::Player;
 use crate::misc::input::InputManager;
@@ -20,7 +22,7 @@ impl Systems {
         let mut world = World::default();
         let player = Player::new();
 
-        resources.insert(WorldEnvironment::from(&camera));
+        resources.insert(Arc::new(Mutex::new(WorldEnvironment::from(&camera))));
         resources.insert(camera);
         resources.insert(input_manager);
 

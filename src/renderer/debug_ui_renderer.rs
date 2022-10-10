@@ -1,10 +1,8 @@
 use crate::game::debug_ui::{DebugUI, DebugUIRenderState};
 use crate::renderer::context::RenderContext;
 
-
 use imgui_wgpu::{Renderer, RendererConfig, RendererResult};
 use wgpu::RenderPass;
-
 
 pub struct DebugUIRenderer {
     pub renderer: Renderer,

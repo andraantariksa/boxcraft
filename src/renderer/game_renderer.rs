@@ -18,6 +18,7 @@ use wgpu::{
     ShaderModuleDescriptor, ShaderStages, TextureFormat, TextureSampleType, TextureViewDimension,
     VertexBufferLayout,
 };
+use winit::dpi::PhysicalSize;
 
 pub struct GameRenderer {
     camera_renderer: CameraRenderer,
@@ -316,6 +317,10 @@ impl GameRenderer {
                     contents: any_slice_as_u8_slice(blocks.as_slice()),
                     usage: BufferUsages::VERTEX,
                 })
+    }
+
+    pub fn resize(&mut self, render_context: &RenderContext) {
+        self.depth_texture = Texture::new_depth(render_context);
     }
 
     pub fn prerender(&self, render_context: &RenderContext, window: &Window, camera: &Camera) {

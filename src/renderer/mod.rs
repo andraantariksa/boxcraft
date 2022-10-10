@@ -119,6 +119,7 @@ impl Renderer {
     pub fn resize(&mut self, new_window_size: &PhysicalSize<u32>) {
         if new_window_size.width > 0 && new_window_size.height > 0 {
             self.render_context.resize(new_window_size);
+            self.game_renderer.resize(&self.render_context);
         }
     }
 }

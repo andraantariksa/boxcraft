@@ -10,8 +10,11 @@ pub struct Chunk {
 impl Chunk {
     pub const CHUNK_SIDE_BLOCK: usize = 16;
     pub const CHUNK_VERTICAL_BLOCK: usize = 2;
+    pub const TOTAL_CHUNK: usize =
+        Self::CHUNK_SIDE_BLOCK * Self::CHUNK_SIDE_BLOCK * Self::CHUNK_VERTICAL_BLOCK;
 
     pub const CHUNK_SIDE_SIZE: f32 = Self::CHUNK_SIDE_BLOCK as f32 * Block::SIZE;
+    pub const CHUNK_HALF_SIDE_SIZE: f32 = Self::CHUNK_SIDE_SIZE as f32 * 0.5;
 
     pub fn from(block: Option<Block>) -> Self {
         let mut blocks = vec![
@@ -30,12 +33,11 @@ impl Chunk {
         Self { blocks }
     }
 
-    pub fn get_total_blocks() -> usize {
-        Self::CHUNK_SIDE_BLOCK * Self::CHUNK_SIDE_BLOCK * Self::CHUNK_VERTICAL_BLOCK
-    }
-
-    pub fn get_faces(&self, center_point: &Vector3<f32>) -> Vec<FacesRawInstance> {
-        let mut blocks = Vec::<FacesRawInstance>::with_capacity(Self::get_total_blocks() * 6);
+    pub fn get_faces(
+        &self,
+        face_raw_instances: &mut Vec<FacesRawInstance>,
+        center_point: &Vector3<f32>,
+    ) {
         for x in 0..Self::CHUNK_SIDE_BLOCK {
             for y in 0..Self::CHUNK_VERTICAL_BLOCK {
                 for z in 0..Self::CHUNK_SIDE_BLOCK {
@@ -56,9 +58,17 @@ impl Chunk {
 
                         // X
                         {
-                            let y_blocks = self.blocks.get(x + 1);
-                            if y_blocks.is_none() || y_blocks.unwrap()[y][z].is_none() {
-                                blocks.push(FacesRawInstance::from(
+                            let _x = x + 1;
+                            if self.blocks.len() >= _x
+                                || unsafe {
+                                    self.blocks
+                                        .get_unchecked(_x)
+                                        .get_unchecked(y)
+                                        .get_unchecked(z)
+                                }
+                                .is_none()
+                            {
+                                face_raw_instances.push(FacesRawInstance::from(
                                     block,
                                     &Transform {
                                         translation: Translation3::from(
@@ -74,27 +84,40 @@ impl Chunk {
                                 ));
                             }
                         }
-                        if x == 0 || self.blocks[x - 1][y][z].is_none() {
-                            blocks.push(FacesRawInstance::from(
-                                block,
-                                &Transform {
-                                    translation: Translation3::from(
-                                        Vector3::new(xx - Block::HALF_SIZE, yy, zz) + center_point,
-                                    ),
-                                    rotation: Rotation3::new(Vector3::new(
-                                        0.0,
-                                        -std::f32::consts::FRAC_PI_2,
-                                        0.0,
-                                    )),
-                                },
-                            ));
+                        {
+                            if x == 0
+                                || unsafe {
+                                    self.blocks
+                                        .get_unchecked(x - 1)
+                                        .get_unchecked(y)
+                                        .get_unchecked(z)
+                                }
+                                .is_none()
+                            {
+                                face_raw_instances.push(FacesRawInstance::from(
+                                    block,
+                                    &Transform {
+                                        translation: Translation3::from(
+                                            Vector3::new(xx - Block::HALF_SIZE, yy, zz)
+                                                + center_point,
+                                        ),
+                                        rotation: Rotation3::new(Vector3::new(
+                                            0.0,
+                                            -std::f32::consts::FRAC_PI_2,
+                                            0.0,
+                                        )),
+                                    },
+                                ));
+                            }
                         }
 
                         // Y
                         {
-                            let z_blocks = y_blocks.get(y + 1);
-                            if z_blocks.is_none() || z_blocks.unwrap()[z].is_none() {
-                                blocks.push(FacesRawInstance::from(
+                            let _y = y + 1;
+                            if y_blocks.len() >= _y
+                                || unsafe { y_blocks.get_unchecked(_y).get_unchecked(z) }.is_none()
+                            {
+                                face_raw_instances.push(FacesRawInstance::from(
                                     block,
                                     &Transform {
                                         translation: Translation3::from(
@@ -110,53 +133,64 @@ impl Chunk {
                                 ));
                             }
                         }
-                        if y == 0 || y_blocks[y - 1][z].is_none() {
-                            blocks.push(FacesRawInstance::from(
-                                block,
-                                &Transform {
-                                    translation: Translation3::from(
-                                        Vector3::new(xx, yy - Block::HALF_SIZE, zz) + center_point,
-                                    ),
-                                    rotation: Rotation3::new(Vector3::new(
-                                        std::f32::consts::FRAC_PI_2,
-                                        0.0,
-                                        0.0,
-                                    )),
-                                },
-                            ));
+                        {
+                            if y == 0
+                                || unsafe { y_blocks.get_unchecked(y - 1).get_unchecked(z) }
+                                    .is_none()
+                            {
+                                face_raw_instances.push(FacesRawInstance::from(
+                                    block,
+                                    &Transform {
+                                        translation: Translation3::from(
+                                            Vector3::new(xx, yy - Block::HALF_SIZE, zz)
+                                                + center_point,
+                                        ),
+                                        rotation: Rotation3::new(Vector3::new(
+                                            std::f32::consts::FRAC_PI_2,
+                                            0.0,
+                                            0.0,
+                                        )),
+                                    },
+                                ));
+                            }
                         }
 
                         // Z
-                        if z_blocks.get(z + 1).is_none() {
-                            blocks.push(FacesRawInstance::from(
-                                block,
-                                &Transform {
-                                    translation: Translation3::from(
-                                        Vector3::new(xx, yy, zz + Block::HALF_SIZE) + center_point,
-                                    ),
-                                    rotation: Rotation3::new(Vector3::new(0.0, 0.0, 0.0)),
-                                },
-                            ));
+                        {
+                            if z_blocks.len() >= z + 1 {
+                                face_raw_instances.push(FacesRawInstance::from(
+                                    block,
+                                    &Transform {
+                                        translation: Translation3::from(
+                                            Vector3::new(xx, yy, zz + Block::HALF_SIZE)
+                                                + center_point,
+                                        ),
+                                        rotation: Rotation3::new(Vector3::new(0.0, 0.0, 0.0)),
+                                    },
+                                ));
+                            }
                         }
-                        if z == 0 || z_blocks[z - 1].is_none() {
-                            blocks.push(FacesRawInstance::from(
-                                block,
-                                &Transform {
-                                    translation: Translation3::from(
-                                        Vector3::new(xx, yy, zz - Block::HALF_SIZE) + center_point,
-                                    ),
-                                    rotation: Rotation3::new(Vector3::new(
-                                        0.0,
-                                        std::f32::consts::PI,
-                                        0.0,
-                                    )),
-                                },
-                            ));
+                        {
+                            if z == 0 || unsafe { z_blocks.get_unchecked(z - 1) }.is_none() {
+                                face_raw_instances.push(FacesRawInstance::from(
+                                    block,
+                                    &Transform {
+                                        translation: Translation3::from(
+                                            Vector3::new(xx, yy, zz - Block::HALF_SIZE)
+                                                + center_point,
+                                        ),
+                                        rotation: Rotation3::new(Vector3::new(
+                                            0.0,
+                                            std::f32::consts::PI,
+                                            0.0,
+                                        )),
+                                    },
+                                ));
+                            }
                         }
                     }
                 }
             }
         }
-        blocks
     }
 }

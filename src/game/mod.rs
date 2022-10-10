@@ -44,6 +44,8 @@ impl Game {
         let renderer = pollster::block_on(Renderer::new(&window, &camera, &mut debug_ui));
         drop(camera);
 
+        puffin::set_scopes_on(true);
+
         Self {
             event_loop,
             debug_ui,
@@ -57,7 +59,7 @@ impl Game {
 
     pub fn run_loop(mut self) {
         {
-            let world_blocks = self.systems.get_resources().get::<World>().unwrap();
+            let mut world_blocks = self.systems.get_resources().get_mut::<World>().unwrap();
             let block_raw_instances = world_blocks.get_block_raw_instances();
             self.renderer.game_renderer.update_blocks(
                 &self.renderer.render_context,
@@ -121,6 +123,8 @@ impl Game {
                     }
                 },
                 Event::MainEventsCleared => {
+                    puffin::GlobalProfiler::lock().new_frame();
+
                     let time_elapsed = time_start.elapsed();
                     time_start = Instant::now();
 

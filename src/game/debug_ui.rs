@@ -12,6 +12,7 @@ use winit::window::Window;
 pub struct DebugUI {
     pub imgui: imgui::Context,
     platform: WinitPlatform,
+    profile_ui: puffin_imgui::ProfilerUi,
 }
 
 impl DebugUI {
@@ -38,7 +39,12 @@ impl DebugUI {
             }),
         }]);
 
-        Self { imgui, platform }
+        let profile_ui = puffin_imgui::ProfilerUi::default();
+        Self {
+            imgui,
+            platform,
+            profile_ui,
+        }
     }
 
     pub fn render(&mut self, _render_pass: &mut RenderPass) {}
@@ -60,6 +66,8 @@ impl DebugUI {
             .prepare_frame(self.imgui.io_mut(), window)
             .unwrap();
         let ui = self.imgui.frame();
+
+        // self.profile_ui.window(&ui);
 
         let camera = resources.get::<Camera>().unwrap();
         let (camera_yaw, camera_pitch) = camera.get_yaw_pitch();

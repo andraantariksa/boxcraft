@@ -25,6 +25,8 @@ impl Block {
     pub const SIZE: f32 = 1.0;
     pub const HALF_SIZE: f32 = Self::SIZE / 2.0;
 
+    pub const TOTAL_FACES: usize = 6;
+
     pub fn new(r#type: BlockType) -> Self {
         Self { r#type }
     }

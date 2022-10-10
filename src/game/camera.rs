@@ -1,3 +1,4 @@
+use crate::game::world::chunk::Chunk;
 use crate::renderer::camera::CameraBuffer;
 use nalgebra::{clamp, Matrix4, Perspective3, Point3, Vector2, Vector3};
 use std::time::Duration;
@@ -15,7 +16,11 @@ impl Camera {
 
     pub fn new() -> Self {
         Self {
-            position: Point3::from_slice(&[0.0, 0.0, 5.0]),
+            position: Point3::from_slice(&[
+                Chunk::CHUNK_SIDE_SIZE / 2.0,
+                5.0,
+                Chunk::CHUNK_SIDE_SIZE / 2.0,
+            ]),
             yaw: -90.0,
             pitch: 0.0,
             sensitivity: 1.0,
