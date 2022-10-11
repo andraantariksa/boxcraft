@@ -12,7 +12,6 @@ use winit::window::Window;
 pub struct DebugUI {
     pub imgui: imgui::Context,
     platform: WinitPlatform,
-    profile_ui: puffin_imgui::ProfilerUi,
 }
 
 impl DebugUI {
@@ -39,12 +38,7 @@ impl DebugUI {
             }),
         }]);
 
-        let profile_ui = puffin_imgui::ProfilerUi::default();
-        Self {
-            imgui,
-            platform,
-            profile_ui,
-        }
+        Self { imgui, platform }
     }
 
     pub fn render(&mut self, _render_pass: &mut RenderPass) {}

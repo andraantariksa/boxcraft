@@ -5,20 +5,20 @@ use nalgebra::{Matrix4, Vector2};
 use std::time::Duration;
 
 bitflags! {
-    struct Neighbor: u8 {
+    pub struct BlockFace: u8 {
         const FRONT = 0b000001;
         const BACK = 0b000010;
         const RIGHT = 0b000100;
         const LEFT = 0b001000;
         const TOP = 0b010000;
         const BOTTOM = 0b100000;
-        // const ABC = Self::A.bits | Self::B.bits | Self::C.bits;
     }
 }
 
 #[derive(Clone)]
 pub struct Block {
     pub r#type: BlockType,
+    pub face: BlockFace,
 }
 
 impl Block {
@@ -28,17 +28,20 @@ impl Block {
     pub const TOTAL_FACES: usize = 6;
 
     pub fn new(r#type: BlockType) -> Self {
-        Self { r#type }
+        Self {
+            r#type,
+            face: BlockFace::empty(),
+        }
     }
 }
 
 #[warn(dead_code)]
-pub struct FacesRawInstance {
+pub struct RawFaceInstance {
     model_transformation: Matrix4<f32>,
     texture_pos: Vector2<i32>,
 }
 
-impl FacesRawInstance {
+impl RawFaceInstance {
     pub fn from(_block: &Block, transform: &Transform) -> Self {
         Self {
             model_transformation: transform.get_transformation_matrix(),
@@ -49,7 +52,7 @@ impl FacesRawInstance {
     pub fn vertex_buffer_layout<'a>() -> wgpu::VertexBufferLayout<'a> {
         use std::mem;
         wgpu::VertexBufferLayout {
-            array_stride: mem::size_of::<FacesRawInstance>() as wgpu::BufferAddress,
+            array_stride: mem::size_of::<RawFaceInstance>() as wgpu::BufferAddress,
             step_mode: wgpu::VertexStepMode::Instance,
             attributes: &[
                 wgpu::VertexAttribute {

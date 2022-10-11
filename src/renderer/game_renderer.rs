@@ -6,7 +6,7 @@ use crate::renderer::util::{any_sized_as_u8_slice, any_slice_as_u8_slice};
 use crate::renderer::vertex::{Vertex, VertexLike};
 use nalgebra::{Point3, Vector2, Vector3};
 
-use crate::game::world::block::FacesRawInstance;
+use crate::game::world::block::RawFaceInstance;
 use crate::renderer::texture::Texture;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{
@@ -224,7 +224,7 @@ impl GameRenderer {
 
         let block_instance_vertex_buffer_layout = [
             Vertex::vertex_buffer_layout(),
-            FacesRawInstance::vertex_buffer_layout(),
+            RawFaceInstance::vertex_buffer_layout(),
         ];
 
         let color_targets_state = [Some(ColorTargetState {
@@ -305,7 +305,7 @@ impl GameRenderer {
     pub fn update_blocks(
         &mut self,
         render_context: &RenderContext,
-        blocks: &Vec<FacesRawInstance>,
+        blocks: &Vec<RawFaceInstance>,
         blocks_total: u32,
     ) {
         self.blocks_total = blocks_total;

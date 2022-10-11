@@ -7,6 +7,7 @@ pub mod world;
 
 use crate::game::camera::Camera;
 use crate::game::debug_ui::DebugUI;
+use std::sync::Arc;
 
 use crate::game::systems::Systems;
 use crate::misc::input::InputManager;
@@ -14,9 +15,11 @@ use crate::misc::physics::Physics;
 use crate::misc::window::Window;
 use crate::renderer::Renderer;
 
+use parking_lot::Mutex;
 use std::time::Instant;
 
 use crate::game::world::World;
+use tokio::sync::mpsc::unbounded_channel;
 use winit::event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
 
@@ -43,8 +46,6 @@ impl Game {
         let camera = systems.get_resources().get::<Camera>().unwrap();
         let renderer = pollster::block_on(Renderer::new(&window, &camera, &mut debug_ui));
         drop(camera);
-
-        puffin::set_scopes_on(true);
 
         Self {
             event_loop,
@@ -123,8 +124,6 @@ impl Game {
                     }
                 },
                 Event::MainEventsCleared => {
-                    puffin::GlobalProfiler::lock().new_frame();
-
                     let time_elapsed = time_start.elapsed();
                     time_start = Instant::now();
 
@@ -153,22 +152,33 @@ impl Game {
                             !self.renderer.game_renderer.is_wireframe_only(),
                         );
                     };
+
                     let mut world_blocks = self.systems.get_resources().get_mut::<World>().unwrap();
-                    if world_blocks.update(&camera) {
-                        let world_block = world_blocks.get_block_raw_instances();
+                    world_blocks.update(&camera);
+                    if let Ok(block_raw_instances) = world_blocks.receiver.try_recv() {
+                        // let mut world_blocks =
+                        //     self.systems.get_resources().get_mut::<World>().unwrap();
                         self.renderer.game_renderer.update_blocks(
                             &self.renderer.render_context,
-                            &world_block,
-                            world_block.len() as u32,
+                            &block_raw_instances,
+                            block_raw_instances.len() as u32,
                         );
                     }
-                    self.renderer.render(
-                        &*camera,
-                        &time_elapsed,
-                        &self.window,
-                        &debug_ui_render_state,
-                        &world_blocks,
-                    );
+                    // if world_blocks.update(&camera) {
+                    //     let block_raw_instances = world_blocks.get_block_raw_instances();
+                    //     self.renderer.game_renderer.update_blocks(
+                    //         &self.renderer.render_context,
+                    //         &block_raw_instances,
+                    //         block_raw_instances.len() as u32,
+                    //     );
+                    // }
+                    // self.renderer.render(
+                    //     &*camera,
+                    //     &time_elapsed,
+                    //     &self.window,
+                    //     &debug_ui_render_state,
+                    //     &world_blocks,
+                    // );
 
                     input_manager.clear();
                 }
