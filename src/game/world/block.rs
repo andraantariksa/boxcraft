@@ -6,12 +6,12 @@ use std::time::Duration;
 
 bitflags! {
     pub struct BlockFace: u8 {
-        const FRONT = 0b000001;
-        const BACK = 0b000010;
-        const RIGHT = 0b000100;
-        const LEFT = 0b001000;
-        const TOP = 0b010000;
-        const BOTTOM = 0b100000;
+        const FRONT = 0b00000001;
+        const BACK = 0b00000010;
+        const RIGHT = 0b00000100;
+        const LEFT = 0b00001000;
+        const TOP = 0b00010000;
+        const BOTTOM = 0b00100000;
     }
 }
 
@@ -33,6 +33,22 @@ impl Block {
             face: BlockFace::empty(),
         }
     }
+
+    pub fn get_texture_pos(r#type: BlockType, face: BlockFace) -> Vector2<i32> {
+        match r#type {
+            BlockType::Dirt => {
+                if face == BlockFace::TOP {
+                    Vector2::new(0, 0)
+                } else if face == BlockFace::BOTTOM {
+                    Vector2::new(2, 0)
+                } else {
+                    Vector2::new(1, 0)
+                }
+            }
+            _ => unreachable!(), // BlockType::Grass => {}
+                                 // BlockType::Cobblestone => {}
+        }
+    }
 }
 
 // #[warn(dead_code)]
@@ -43,10 +59,10 @@ pub struct RawFaceInstance {
 }
 
 impl RawFaceInstance {
-    pub fn from(_block: &Block, transform: &Transform) -> Self {
+    pub fn from(r#type: BlockType, face: BlockFace, transform: &Transform) -> Self {
         Self {
             model_transformation: transform.get_transformation_matrix(),
-            texture_pos: Vector2::new(1, 0),
+            texture_pos: Block::get_texture_pos(r#type, face),
         }
     }
 
@@ -86,7 +102,7 @@ impl RawFaceInstance {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 #[repr(u32)]
 pub enum BlockType {
     Dirt,

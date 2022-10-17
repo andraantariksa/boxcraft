@@ -3,6 +3,7 @@ pub mod chunk;
 pub mod generator;
 
 use crate::game::camera::Camera;
+use rayon::prelude::*;
 use std::collections::{HashMap, HashSet, VecDeque};
 
 use crate::game::world::block::{Block, BlockType, RawFaceInstance};
@@ -25,7 +26,7 @@ impl World {
     pub const FRONT: Vector3<f32> = Vector3::new(0.0, 0.0, 1.0);
     pub const BACK: Vector3<f32> = Vector3::new(0.0, 0.0, -1.0);
 
-    pub const RENDER_CHUNK: usize = 3;
+    pub const RENDER_CHUNK: usize = 1;
     pub const TOTAL_CHUNKS: usize = (Self::RENDER_CHUNK * 2 + 1) * (Self::RENDER_CHUNK * 2 + 1);
     pub const TOTAL_CHUNK_BLOCKS: usize = Chunk::MAXIMUM_TOTAL_BLOCKS * World::TOTAL_CHUNKS;
 
@@ -111,8 +112,16 @@ impl World {
                 self.visible_chunks.remove(chunk_coord);
             }
 
-            for chunk_coord in needed_chunk {
-                let chunk = Chunk::with_block(Some(Block::new(BlockType::Dirt)), chunk_coord);
+            let chunks = needed_chunk
+                .into_par_iter()
+                .map(|chunk_coord| {
+                    (
+                        chunk_coord,
+                        Chunk::with_block(Some(Block::new(BlockType::Dirt)), chunk_coord),
+                    )
+                })
+                .collect::<Vec<(Vector2<i32>, Chunk)>>();
+            for (chunk_coord, chunk) in chunks {
                 self.visible_chunks.insert(chunk_coord, chunk);
             }
 

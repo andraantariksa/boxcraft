@@ -15,7 +15,7 @@ pub struct Chunk {
 
 impl Chunk {
     pub const CHUNK_SIDE_BLOCK: usize = 16;
-    pub const CHUNK_VERTICAL_BLOCK: usize = 2;
+    pub const CHUNK_VERTICAL_BLOCK: usize = 128;
     pub const MAXIMUM_TOTAL_BLOCKS: usize =
         Self::CHUNK_SIDE_BLOCK * Self::CHUNK_SIDE_BLOCK * Self::CHUNK_VERTICAL_BLOCK;
 
@@ -57,7 +57,7 @@ impl Chunk {
                             // X
                             {
                                 let _x = x + 1;
-                                if self.blocks.len() >= _x
+                                if Self::CHUNK_SIDE_BLOCK <= _x
                                     || unsafe {
                                         self.blocks
                                             .get_unchecked(_x)
@@ -86,7 +86,7 @@ impl Chunk {
                             // Y
                             {
                                 let _y = y + 1;
-                                if y_blocks.len() >= _y
+                                if Self::CHUNK_VERTICAL_BLOCK <= _y
                                     || unsafe { y_blocks.get_unchecked(_y).get_unchecked(z) }
                                         .is_none()
                                 {
@@ -104,7 +104,10 @@ impl Chunk {
 
                             // Z
                             {
-                                if z_blocks.len() >= z + 1 {
+                                let _z = z + 1;
+                                if Self::CHUNK_SIDE_BLOCK <= _z
+                                    || unsafe { z_blocks.get_unchecked(_z) }.is_none()
+                                {
                                     face |= BlockFace::FRONT;
                                 }
                             }
@@ -121,7 +124,7 @@ impl Chunk {
                     let maybe_block = unsafe { z_blocks.get_unchecked_mut(z) };
 
                     if !face.is_empty() {
-                        unsafe { maybe_block.as_mut().unwrap_unchecked() }.face |= face;
+                        unsafe { maybe_block.as_mut().unwrap_unchecked() }.face = face;
                     }
                 }
             }
@@ -151,7 +154,8 @@ impl Chunk {
 
                         if block.face.contains(BlockFace::RIGHT) {
                             self.raw_face_instances.push(RawFaceInstance::from(
-                                block,
+                                block.r#type,
+                                BlockFace::RIGHT,
                                 &Transform {
                                     translation: Translation3::from(
                                         Vector3::new(xx + Block::HALF_SIZE, yy, zz)
@@ -167,7 +171,8 @@ impl Chunk {
                         }
                         if block.face.contains(BlockFace::LEFT) {
                             self.raw_face_instances.push(RawFaceInstance::from(
-                                block,
+                                block.r#type,
+                                BlockFace::LEFT,
                                 &Transform {
                                     translation: Translation3::from(
                                         Vector3::new(xx - Block::HALF_SIZE, yy, zz)
@@ -183,7 +188,8 @@ impl Chunk {
                         }
                         if block.face.contains(BlockFace::TOP) {
                             self.raw_face_instances.push(RawFaceInstance::from(
-                                block,
+                                block.r#type,
+                                BlockFace::TOP,
                                 &Transform {
                                     translation: Translation3::from(
                                         Vector3::new(xx, yy + Block::HALF_SIZE, zz)
@@ -199,7 +205,8 @@ impl Chunk {
                         }
                         if block.face.contains(BlockFace::BOTTOM) {
                             self.raw_face_instances.push(RawFaceInstance::from(
-                                block,
+                                block.r#type,
+                                BlockFace::BOTTOM,
                                 &Transform {
                                     translation: Translation3::from(
                                         Vector3::new(xx, yy - Block::HALF_SIZE, zz)
@@ -215,7 +222,8 @@ impl Chunk {
                         }
                         if block.face.contains(BlockFace::FRONT) {
                             self.raw_face_instances.push(RawFaceInstance::from(
-                                block,
+                                block.r#type,
+                                BlockFace::FRONT,
                                 &Transform {
                                     translation: Translation3::from(
                                         Vector3::new(xx, yy, zz + Block::HALF_SIZE)
@@ -225,9 +233,10 @@ impl Chunk {
                                 },
                             ));
                         }
-                        if block.face.contains(BlockFace::BOTTOM) {
+                        if block.face.contains(BlockFace::BACK) {
                             self.raw_face_instances.push(RawFaceInstance::from(
-                                block,
+                                block.r#type,
+                                BlockFace::BACK,
                                 &Transform {
                                     translation: Translation3::from(
                                         Vector3::new(xx, yy, zz - Block::HALF_SIZE)

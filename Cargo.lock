@@ -141,6 +141,7 @@ dependencies = [
  "parking_lot 0.12.1",
  "pollster",
  "rapier3d",
+ "rayon",
  "shaderc",
  "tokio",
  "wgpu",
