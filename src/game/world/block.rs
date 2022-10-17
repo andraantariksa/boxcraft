@@ -35,7 +35,8 @@ impl Block {
     }
 }
 
-#[warn(dead_code)]
+// #[warn(dead_code)]
+#[derive(Clone)]
 pub struct RawFaceInstance {
     model_transformation: Matrix4<f32>,
     texture_pos: Vector2<i32>,

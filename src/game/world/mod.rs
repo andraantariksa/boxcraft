@@ -3,7 +3,7 @@ pub mod chunk;
 pub mod generator;
 
 use crate::game::camera::Camera;
-use std::collections::{HashMap, VecDeque};
+use std::collections::{HashMap, HashSet, VecDeque};
 
 use crate::game::world::block::{Block, BlockType, RawFaceInstance};
 use crate::game::world::chunk::Chunk;
@@ -25,37 +25,33 @@ impl World {
     pub const FRONT: Vector3<f32> = Vector3::new(0.0, 0.0, 1.0);
     pub const BACK: Vector3<f32> = Vector3::new(0.0, 0.0, -1.0);
 
-    pub const RENDER_CHUNK: usize = 1;
+    pub const RENDER_CHUNK: usize = 3;
     pub const TOTAL_CHUNKS: usize = (Self::RENDER_CHUNK * 2 + 1) * (Self::RENDER_CHUNK * 2 + 1);
-    pub const TOTAL_CHUNK_BLOCKS: usize = Chunk::TOTAL_BLOCKS * World::TOTAL_CHUNKS;
+    pub const TOTAL_CHUNK_BLOCKS: usize = Chunk::MAXIMUM_TOTAL_BLOCKS * World::TOTAL_CHUNKS;
 
     pub fn from(camera: &Camera) -> Self {
         let corner_relative_coord = Self::RENDER_CHUNK as i32;
 
         let center_point_chunk_coord =
             Self::get_chunk_coord_from_world_coord(&camera.position.xz().coords);
-        let mut raw_face_instances = Vec::with_capacity(Self::TOTAL_CHUNK_BLOCKS * Block::TOTAL_FACES);
+        let mut raw_face_instances =
+            Vec::with_capacity(Self::TOTAL_CHUNK_BLOCKS * Block::TOTAL_FACES);
         let mut visible_chunks = HashMap::with_capacity(Self::TOTAL_CHUNKS);
 
         for x in -corner_relative_coord..=corner_relative_coord {
             for z in -corner_relative_coord..=corner_relative_coord {
-                let current_chunk_coord = center_point_chunk_coord + Vector2::new(x, z);
-                let chunk_center_point =
-                    Self::get_world_coord_from_chunk_coord(&current_chunk_coord);
+                let chunk_coord = center_point_chunk_coord + Vector2::new(x, z);
 
-                let chunk = Chunk::from(Some(Block::new(BlockType::Dirt)));
-                chunk.get_raw_face_instances(
-                    &mut raw_face_instances,
-                    &Vector3::new(chunk_center_point.x, 0.0, chunk_center_point.y),
-                );
-                visible_chunks.insert(current_chunk_coord, chunk);
+                let chunk = Chunk::with_block(Some(Block::new(BlockType::Dirt)), chunk_coord);
+                raw_face_instances.extend(chunk.get_raw_face_instances().into_iter());
+                visible_chunks.insert(chunk_coord, chunk);
             }
         }
 
         Self {
             visible_chunks,
             center_point_chunk_coord,
-            raw_face_instances
+            raw_face_instances,
         }
     }
 
@@ -68,14 +64,11 @@ impl World {
         for x in -corner_relative_coord..=corner_relative_coord {
             for z in -corner_relative_coord..=corner_relative_coord {
                 let current_chunk_coord = center_point_chunk_coord + Vector2::new(x, z);
-                let chunk_center_point =
-                    Self::get_world_coord_from_chunk_coord(&current_chunk_coord);
 
-                let chunk = Chunk::from(Some(Block::new(BlockType::Dirt)));
-                chunk.get_raw_face_instances(
-                    &mut block_raw_instances,
-                    &Vector3::new(chunk_center_point.x, 0.0, chunk_center_point.y),
-                );
+                let chunk =
+                    Chunk::with_block(Some(Block::new(BlockType::Dirt)), current_chunk_coord);
+                let raw_face_instances = chunk.get_raw_face_instances();
+                block_raw_instances.extend(raw_face_instances.into_iter());
             }
         }
 
@@ -85,32 +78,51 @@ impl World {
     pub fn update(&mut self, camera: &Camera) -> bool {
         let current_chunk_coord =
             Self::get_chunk_coord_from_world_coord(&camera.position.xz().coords);
-        let o = self.center_point_chunk_coord == current_chunk_coord;
 
-        if !o {
+        let is_moved_chunk = self.center_point_chunk_coord != current_chunk_coord;
+        if is_moved_chunk {
             self.center_point_chunk_coord = current_chunk_coord;
+
             let corner_relative_coord = Self::RENDER_CHUNK as i32;
 
             self.raw_face_instances.clear();
-            self.visible_chunks.clear();
 
+            let mut needed_chunk = HashSet::<Vector2<i32>>::new();
             for x in -corner_relative_coord..=corner_relative_coord {
                 for z in -corner_relative_coord..=corner_relative_coord {
                     let current_chunk_coord = self.center_point_chunk_coord + Vector2::new(x, z);
-                    let chunk_center_point =
-                        Self::get_world_coord_from_chunk_coord(&current_chunk_coord);
-
-                    let chunk = Chunk::from(Some(Block::new(BlockType::Dirt)));
-                    chunk.get_raw_face_instances(
-                        &mut self.raw_face_instances,
-                        &Vector3::new(chunk_center_point.x, 0.0, chunk_center_point.y),
-                    );
-                    self.visible_chunks.insert(current_chunk_coord, chunk);
+                    needed_chunk.insert(current_chunk_coord);
                 }
+            }
+
+            let mut chunk_to_remove = Vec::new();
+            for chunk_coord in self.visible_chunks.keys() {
+                needed_chunk.remove(chunk_coord);
+
+                let diff = chunk_coord - current_chunk_coord;
+                let diff_pow_2 = diff * diff;
+                let diagonal_diff = (diff_pow_2.x + diff_pow_2.y).sqrt();
+                let max_diff = Self::RENDER_CHUNK as i32;
+                if diagonal_diff > max_diff {
+                    chunk_to_remove.push(chunk_coord.clone());
+                }
+            }
+            for chunk_coord in chunk_to_remove.iter() {
+                self.visible_chunks.remove(chunk_coord);
+            }
+
+            for chunk_coord in needed_chunk {
+                let chunk = Chunk::with_block(Some(Block::new(BlockType::Dirt)), chunk_coord);
+                self.visible_chunks.insert(chunk_coord, chunk);
+            }
+
+            for chunk in self.visible_chunks.values() {
+                self.raw_face_instances
+                    .extend(chunk.get_raw_face_instances())
             }
         }
 
-        o
+        is_moved_chunk
     }
 
     #[inline]
