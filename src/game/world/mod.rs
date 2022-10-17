@@ -100,8 +100,8 @@ impl World {
                 needed_chunk.remove(chunk_coord);
 
                 let diff = chunk_coord - current_chunk_coord;
-                let diff_pow_2 = diff * diff;
-                let diagonal_diff = (diff_pow_2.x + diff_pow_2.y).sqrt();
+                let diagonal_diff =
+                    (diff.x as f32 * diff.x as f32 + diff.y as f32 * diff.y as f32).sqrt() as i32;
                 let max_diff = Self::RENDER_CHUNK as i32;
                 if diagonal_diff > max_diff {
                     chunk_to_remove.push(chunk_coord.clone());
