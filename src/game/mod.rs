@@ -154,31 +154,31 @@ impl Game {
                     };
 
                     let mut world_blocks = self.systems.get_resources().get_mut::<World>().unwrap();
-                    world_blocks.update(&camera);
-                    if let Ok(block_raw_instances) = world_blocks.receiver.try_recv() {
-                        // let mut world_blocks =
-                        //     self.systems.get_resources().get_mut::<World>().unwrap();
-                        self.renderer.game_renderer.update_blocks(
-                            &self.renderer.render_context,
-                            &block_raw_instances,
-                            block_raw_instances.len() as u32,
-                        );
-                    }
-                    // if world_blocks.update(&camera) {
-                    //     let block_raw_instances = world_blocks.get_block_raw_instances();
+                    // world_blocks.update(&camera);
+                    // if let Ok(block_raw_instances) = world_blocks.receiver.try_recv() {
+                    //     // let mut world_blocks =
+                    //     //     self.systems.get_resources().get_mut::<World>().unwrap();
                     //     self.renderer.game_renderer.update_blocks(
                     //         &self.renderer.render_context,
                     //         &block_raw_instances,
                     //         block_raw_instances.len() as u32,
                     //     );
                     // }
-                    // self.renderer.render(
-                    //     &*camera,
-                    //     &time_elapsed,
-                    //     &self.window,
-                    //     &debug_ui_render_state,
-                    //     &world_blocks,
-                    // );
+                    if world_blocks.update(&camera) {
+                        let block_raw_instances = world_blocks.get_block_raw_instances();
+                        self.renderer.game_renderer.update_blocks(
+                            &self.renderer.render_context,
+                            &block_raw_instances,
+                            block_raw_instances.len() as u32,
+                        );
+                    }
+                    self.renderer.render(
+                        &*camera,
+                        &time_elapsed,
+                        &self.window,
+                        &debug_ui_render_state,
+                        &world_blocks,
+                    );
 
                     input_manager.clear();
                 }

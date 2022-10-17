@@ -4,9 +4,6 @@ pub mod renderer;
 
 use crate::game::Game;
 
-
-
-
 fn main() {
     env_logger::init();
 

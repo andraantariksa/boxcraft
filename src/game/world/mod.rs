@@ -10,16 +10,11 @@ use crate::game::world::chunk::Chunk;
 
 use nalgebra::{try_convert, Point2, Vector2, Vector3};
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
-use tokio::task::JoinHandle;
-use wgpu::PolygonMode::Point;
 
 pub struct World {
-    visible_chunks: VecDeque<VecDeque<Chunk>>,
+    visible_chunks: HashMap<Vector2<i32>, Chunk>,
     center_point_chunk_coord: Vector2<i32>,
     raw_face_instances: Vec<RawFaceInstance>,
-    sender: UnboundedSender<Vec<RawFaceInstance>>,
-    pub receiver: UnboundedReceiver<Vec<RawFaceInstance>>,
-    handler: Option<JoinHandle<()>>,
 }
 
 impl World {
@@ -30,20 +25,19 @@ impl World {
     pub const FRONT: Vector3<f32> = Vector3::new(0.0, 0.0, 1.0);
     pub const BACK: Vector3<f32> = Vector3::new(0.0, 0.0, -1.0);
 
-    pub const RENDER_CHUNK: usize = 2;
-    pub const TOTAL_CHUNKS: usize = (Self::RENDER_CHUNK * 2 + 1) * 2;
+    pub const RENDER_CHUNK: usize = 1;
+    pub const TOTAL_CHUNKS: usize = (Self::RENDER_CHUNK * 2 + 1) * (Self::RENDER_CHUNK * 2 + 1);
     pub const TOTAL_CHUNK_BLOCKS: usize = Chunk::TOTAL_BLOCKS * World::TOTAL_CHUNKS;
 
     pub fn from(camera: &Camera) -> Self {
+        let corner_relative_coord = Self::RENDER_CHUNK as i32;
+
         let center_point_chunk_coord =
             Self::get_chunk_coord_from_world_coord(&camera.position.xz().coords);
-        let corner_relative_coord = Self::RENDER_CHUNK as i32;
-        let mut raw_face_instances =
-            Vec::with_capacity(Self::TOTAL_CHUNK_BLOCKS * Block::TOTAL_FACES);
+        let mut raw_face_instances = Vec::with_capacity(Self::TOTAL_CHUNK_BLOCKS * Block::TOTAL_FACES);
+        let mut visible_chunks = HashMap::with_capacity(Self::TOTAL_CHUNKS);
 
-        let mut visible_chunks = VecDeque::with_capacity(Self::RENDER_CHUNK * 2 + 1);
         for x in -corner_relative_coord..=corner_relative_coord {
-            let mut x_chunks = VecDeque::with_capacity(Self::RENDER_CHUNK * 2 + 1);
             for z in -corner_relative_coord..=corner_relative_coord {
                 let current_chunk_coord = center_point_chunk_coord + Vector2::new(x, z);
                 let chunk_center_point =
@@ -54,21 +48,14 @@ impl World {
                     &mut raw_face_instances,
                     &Vector3::new(chunk_center_point.x, 0.0, chunk_center_point.y),
                 );
-                x_chunks.push_back(chunk);
+                visible_chunks.insert(current_chunk_coord, chunk);
             }
-
-            visible_chunks.push_back(x_chunks);
         }
-
-        let (sender, receiver) = unbounded_channel();
 
         Self {
             visible_chunks,
             center_point_chunk_coord,
-            raw_face_instances,
-            receiver,
-            sender,
-            handler: None,
+            raw_face_instances
         }
     }
 
@@ -95,17 +82,35 @@ impl World {
         block_raw_instances
     }
 
-    pub fn update(&mut self, camera: &Camera) {
+    pub fn update(&mut self, camera: &Camera) -> bool {
         let current_chunk_coord =
             Self::get_chunk_coord_from_world_coord(&camera.position.xz().coords);
-        if self.center_point_chunk_coord == current_chunk_coord {
-            return;
+        let o = self.center_point_chunk_coord == current_chunk_coord;
+
+        if !o {
+            self.center_point_chunk_coord = current_chunk_coord;
+            let corner_relative_coord = Self::RENDER_CHUNK as i32;
+
+            self.raw_face_instances.clear();
+            self.visible_chunks.clear();
+
+            for x in -corner_relative_coord..=corner_relative_coord {
+                for z in -corner_relative_coord..=corner_relative_coord {
+                    let current_chunk_coord = self.center_point_chunk_coord + Vector2::new(x, z);
+                    let chunk_center_point =
+                        Self::get_world_coord_from_chunk_coord(&current_chunk_coord);
+
+                    let chunk = Chunk::from(Some(Block::new(BlockType::Dirt)));
+                    chunk.get_raw_face_instances(
+                        &mut self.raw_face_instances,
+                        &Vector3::new(chunk_center_point.x, 0.0, chunk_center_point.y),
+                    );
+                    self.visible_chunks.insert(current_chunk_coord, chunk);
+                }
+            }
         }
 
-        self.handler = Some(tokio::spawn(async {
-            let a = self.get_faces();
-            self.sender.send(a);
-        }));
+        o
     }
 
     #[inline]
