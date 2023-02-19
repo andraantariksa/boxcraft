@@ -1,8 +1,9 @@
 use crate::misc::window::Window;
 
 use wgpu::{
-    CommandEncoder, CommandEncoderDescriptor, Instance, PresentMode, Surface, SurfaceConfiguration,
-    SurfaceTexture, TextureFormat, TextureView, TextureViewDescriptor,
+    Backends, CommandEncoder, CommandEncoderDescriptor, Dx12Compiler, Instance, InstanceDescriptor,
+    PresentMode, Surface, SurfaceConfiguration, SurfaceTexture, TextureFormat, TextureView,
+    TextureViewDescriptor,
 };
 use winit::dpi::PhysicalSize;
 
@@ -15,8 +16,11 @@ pub struct RenderContext {
 
 impl RenderContext {
     pub async fn new(window: &Window) -> Self {
-        let instance = Instance::new(wgpu::Backends::all());
-        let render_surface = unsafe { instance.create_surface(&**window) };
+        let instance = Instance::new(InstanceDescriptor {
+            backends: Backends::VULKAN,
+            dx12_shader_compiler: Dx12Compiler::Fxc,
+        });
+        let render_surface = unsafe { instance.create_surface(&**window) }.unwrap();
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
                 power_preference: wgpu::PowerPreference::HighPerformance,
@@ -44,6 +48,8 @@ impl RenderContext {
             width: window_size.width,
             height: window_size.height,
             present_mode: PresentMode::Fifo,
+            alpha_mode: Default::default(),
+            view_formats: Vec::new(),
         };
         render_surface.configure(&device, &render_surface_config);
 

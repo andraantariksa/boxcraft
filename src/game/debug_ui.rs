@@ -67,10 +67,9 @@ impl DebugUI {
         let (camera_yaw, camera_pitch) = camera.get_yaw_pitch();
 
         {
-            let window = imgui::Window::new("Info");
-            window
+            ui.window("Info")
                 .size([300.0, 300.0], Condition::FirstUseEver)
-                .build(&ui, || {
+                .build(|| {
                     ui.text("Camera");
                     ui.separator();
                     let mouse_pos = ui.io().mouse_pos;
@@ -99,7 +98,7 @@ impl DebugUI {
         self.platform.prepare_render(&ui, window);
 
         DebugUIRenderState {
-            draw_data: ui.render(),
+            draw_data: self.imgui.render(),
         }
     }
 }
