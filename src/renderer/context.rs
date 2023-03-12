@@ -17,8 +17,8 @@ pub struct RenderContext {
 impl RenderContext {
     pub async fn new(window: &Window) -> Self {
         let instance = Instance::new(InstanceDescriptor {
-            backends: Backends::VULKAN,
-            dx12_shader_compiler: Dx12Compiler::Fxc,
+            backends: Backends::all(),
+            dx12_shader_compiler: Dx12Compiler::default(),
         });
         let render_surface = unsafe { instance.create_surface(&**window) }.unwrap();
         let adapter = instance

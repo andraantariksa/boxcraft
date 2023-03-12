@@ -3,6 +3,7 @@ use std::mem;
 use wgpu::{BufferAddress, VertexAttribute, VertexBufferLayout, VertexFormat, VertexStepMode};
 
 #[warn(dead_code)]
+#[repr(C)]
 pub struct Vertex {
     pub position: Point3<f32>,
     pub normal: Vector3<f32>,

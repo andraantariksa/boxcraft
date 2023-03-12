@@ -98,7 +98,7 @@ impl Game {
                         ..
                     } => {
                         self.is_cursor_locked = !self.is_cursor_locked;
-                        self.window.set_cursor_grab(CursorGrabMode::Locked).unwrap();
+                        // self.window.set_cursor_grab(CursorGrabMode::Locked).unwrap();
                     }
                     WindowEvent::Resized(new_inner_size) => {
                         self.window.on_resized(&new_inner_size);
