@@ -18,7 +18,6 @@ use wgpu::{
     ShaderModuleDescriptor, ShaderStages, TextureFormat, TextureSampleType, TextureViewDimension,
     VertexBufferLayout,
 };
-use winit::dpi::PhysicalSize;
 
 pub struct GameRenderer {
     camera_renderer: CameraRenderer,

@@ -38,6 +38,7 @@ impl Texture {
             dimension: TextureDimension::D2,
             format: TextureFormat::Rgba8UnormSrgb,
             usage: wgpu::TextureUsages::COPY_DST | wgpu::TextureUsages::TEXTURE_BINDING,
+            view_formats: &[],
         });
 
         context.queue.write_texture(
@@ -76,7 +77,7 @@ impl Texture {
             min_filter: FilterMode::Linear,
             mipmap_filter: FilterMode::Nearest,
             lod_min_clamp: 0.0,
-            lod_max_clamp: 0.0,
+            lod_max_clamp: 100.0,
             compare: None,
             anisotropy_clamp: None,
             border_color: None,
@@ -104,6 +105,7 @@ impl Texture {
             dimension: TextureDimension::D2,
             format: Self::DEPTH_FORMAT,
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
+            view_formats: &[Self::DEPTH_FORMAT],
         });
 
         let texture_view = texture.create_view(&TextureViewDescriptor {
@@ -125,7 +127,7 @@ impl Texture {
             mag_filter: FilterMode::Linear,
             min_filter: FilterMode::Linear,
             mipmap_filter: FilterMode::Nearest,
-            lod_min_clamp: -100.0,
+            lod_min_clamp: 0.0,
             lod_max_clamp: 100.0,
             compare: Some(CompareFunction::LessEqual),
             anisotropy_clamp: None,

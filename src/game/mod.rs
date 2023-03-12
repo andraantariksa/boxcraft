@@ -22,6 +22,7 @@ use crate::game::world::World;
 use tokio::sync::mpsc::unbounded_channel;
 use winit::event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
+use winit::window::CursorGrabMode;
 
 pub struct Game {
     event_loop: EventLoop<()>,
@@ -97,7 +98,7 @@ impl Game {
                         ..
                     } => {
                         self.is_cursor_locked = !self.is_cursor_locked;
-                        self.window.set_cursor_grab(self.is_cursor_locked).unwrap();
+                        // self.window.set_cursor_grab(CursorGrabMode::Locked).unwrap();
                     }
                     WindowEvent::Resized(new_inner_size) => {
                         self.window.on_resized(&new_inner_size);
