@@ -19,7 +19,6 @@ pollster = "0.3.0"
 legion = "0.4.0"
 atomic_refcell = "0.1.9"
 parking_lot = "0.12.1"
-tokio = { version = "1.25.0", features = ["sync", "rt"] }
 rayon = "1.6.1"
 
 [build-dependencies]

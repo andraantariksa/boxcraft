@@ -5,17 +5,21 @@ pub mod generator;
 use crate::game::camera::Camera;
 use rayon::prelude::*;
 use std::collections::{HashMap, HashSet, VecDeque};
+use std::sync::mpsc::{channel, Receiver, Sender};
 
 use crate::game::world::block::{Block, BlockType, RawFaceInstance};
 use crate::game::world::chunk::Chunk;
 
 use nalgebra::{try_convert, Point2, Vector2, Vector3};
-use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 
 pub struct World {
     visible_chunks: HashMap<Vector2<i32>, Chunk>,
     center_point_chunk_coord: Vector2<i32>,
     raw_face_instances: Vec<RawFaceInstance>,
+
+    enqueued_chunk: HashSet<Vector2<i32>>,
+    chunk_rx: Receiver<Chunk>,
+    to_world_tx: Sender<Chunk>,
 }
 
 impl World {
@@ -49,10 +53,15 @@ impl World {
             }
         }
 
+        let (to_world_tx, chunk_rx) = channel();
+
         Self {
             visible_chunks,
             center_point_chunk_coord,
             raw_face_instances,
+            enqueued_chunk: HashSet::new(),
+            chunk_rx,
+            to_world_tx,
         }
     }
 
@@ -74,6 +83,23 @@ impl World {
         }
 
         block_raw_instances
+    }
+
+    fn enqueue(&self, chunk_coord: Vector2<i32>) {
+        let sender = self.to_world_tx.clone();
+
+        rayon::scope(move |ctx| {
+            let chunk = Chunk::with_block(Some(Block::new(BlockType::Dirt)), chunk_coord);
+            sender.send(chunk).unwrap();
+        });
+    }
+
+    fn try_get_chunks(&self) -> Vec<Chunk> {
+        let mut chunks = vec![];
+        while let Ok(chunk) = self.chunk_rx.try_recv() {
+            chunks.push(chunk);
+        }
+        chunks
     }
 
     pub fn update(&mut self, camera: &Camera) -> bool {
@@ -112,26 +138,32 @@ impl World {
                 self.visible_chunks.remove(chunk_coord);
             }
 
-            let chunks = needed_chunk
-                .into_par_iter()
-                .map(|chunk_coord| {
-                    (
-                        chunk_coord,
-                        Chunk::with_block(Some(Block::new(BlockType::Dirt)), chunk_coord),
-                    )
-                })
-                .collect::<Vec<(Vector2<i32>, Chunk)>>();
-            for (chunk_coord, chunk) in chunks {
-                self.visible_chunks.insert(chunk_coord, chunk);
+            for chunk_coord in needed_chunk {
+                self.enqueue(chunk_coord);
             }
 
-            for chunk in self.visible_chunks.values() {
-                self.raw_face_instances
-                    .extend(chunk.get_raw_face_instances())
-            }
+            // for (chunk_coord, chunk) in chunks {
+            //     self.visible_chunks.insert(chunk_coord, chunk);
+            // }
+
+            // for chunk in self.visible_chunks.values() {
+            //     self.raw_face_instances
+            //         .extend(chunk.get_raw_face_instances())
+            // }
         }
 
         is_moved_chunk
+    }
+
+    pub fn get_changes(&self) -> Option<&Vec<RawFaceInstance>> {
+        let chunks = self.try_get_chunks();
+        if chunks.is_empty() {
+            None
+        } else {
+            println!("Chunk is not empty!");
+            None
+            // Some()
+        }
     }
 
     #[inline]
