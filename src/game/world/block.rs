@@ -5,6 +5,7 @@ use nalgebra::{Matrix4, Vector2};
 use std::time::Duration;
 
 bitflags! {
+    #[derive(Clone, PartialEq)]
     pub struct BlockFace: u8 {
         const FRONT = 0b00000001;
         const BACK = 0b00000010;
