@@ -47,6 +47,8 @@ impl Game {
         let renderer = pollster::block_on(Renderer::new(&window, &camera, &mut debug_ui));
         drop(camera);
 
+        log::info!("Main thread {:?}", std::thread::current().id());
+
         Self {
             event_loop,
             debug_ui,
@@ -154,15 +156,14 @@ impl Game {
                     };
 
                     let mut world_blocks = self.systems.get_resources().get_mut::<World>().unwrap();
-                    if world_blocks.update(&camera) {
-                        // let block_raw_instances = world_blocks.get_block_raw_instances();
-                        // self.renderer.game_renderer.update_blocks(
-                        //     &self.renderer.render_context,
-                        //     &block_raw_instances,
-                        //     block_raw_instances.len() as u32,
-                        // );
+                    if world_blocks.update_chunk(&camera) {
+                        let block_raw_instances = world_blocks.get_block_raw_instances();
+                        self.renderer.game_renderer.update_blocks(
+                            &self.renderer.render_context,
+                            &block_raw_instances,
+                            block_raw_instances.len() as u32,
+                        );
                     }
-                    world_blocks.get_changes();
                     self.renderer.render(
                         &*camera,
                         &time_elapsed,
