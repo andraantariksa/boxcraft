@@ -35,9 +35,9 @@ pub fn update_player(
     }
 
     if input_manager.is_key_pressed(&VirtualKeyCode::W) {
-        camera.position += delta_movement * camera.get_direction();
+        camera.position += delta_movement * camera.get_direction_horizontally();
     } else if input_manager.is_key_pressed(&VirtualKeyCode::S) {
-        camera.position -= delta_movement * camera.get_direction();
+        camera.position -= delta_movement * camera.get_direction_horizontally();
     }
 
     if input_manager.is_key_pressed(&VirtualKeyCode::Space) {

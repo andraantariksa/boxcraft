@@ -9,7 +9,7 @@ image = "0.24.5"
 wgpu = { version = "0.15.1", features = ["spirv"] }
 winit = "0.27.2"
 nalgebra = "0.32.1"
-rapier3d = "0.17.1"
+rapier3d = { version = "0.17.1", features = ["simd-stable"] }
 imgui = "0.10.0"
 imgui-winit-support = { version = "0.10.0" }
 imgui-wgpu = "0.22.0"

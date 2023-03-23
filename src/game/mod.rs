@@ -31,7 +31,6 @@ pub struct Game {
     is_cursor_locked: bool,
 
     renderer: Renderer,
-    physics: Physics,
     systems: Systems,
 }
 
@@ -56,7 +55,6 @@ impl Game {
             renderer,
             systems,
             is_cursor_locked: true,
-            physics: Physics::new(),
         }
     }
 
@@ -102,8 +100,8 @@ impl Game {
                         // self.window.set_cursor_grab(CursorGrabMode::Locked).unwrap();
                     }
                     WindowEvent::Resized(new_inner_size) => {
-                        self.window.on_resized(&new_inner_size);
-                        self.renderer.resize(&new_inner_size);
+                        self.window.on_resized(new_inner_size);
+                        self.renderer.resize(new_inner_size);
                     }
                     WindowEvent::ScaleFactorChanged {
                         scale_factor,

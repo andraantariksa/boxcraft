@@ -9,11 +9,15 @@ use crate::game::world::World as WorldEnvironment;
 
 use legion::{Resources, Schedule, World};
 use std::time::Duration;
+use rapier3d::dynamics::RigidBodyType;
+use rapier3d::prelude::{RigidBody, RigidBodyBuilder};
+use crate::misc::physics::Physics;
 
 pub struct Systems {
     schedule: Schedule,
     pub world: World,
     pub resources: Resources,
+    physics: Physics
 }
 
 impl Systems {
@@ -26,7 +30,12 @@ impl Systems {
         resources.insert(camera);
         resources.insert(input_manager);
 
-        world.push((player,));
+        let mut physics = Physics::new();
+
+        let rb = RigidBodyBuilder::new(RigidBodyType::KinematicVelocityBased).gravity_scale(0.0).build();
+        let rb_handle = physics.rigid_body_set.insert(rb);
+
+        world.push((player, rb_handle));
 
         Self {
             schedule: Schedule::builder()
@@ -34,6 +43,7 @@ impl Systems {
                 .build(),
             world,
             resources,
+            physics
         }
     }
 
@@ -45,4 +55,9 @@ impl Systems {
     pub fn get_resources(&self) -> &Resources {
         &self.resources
     }
+}
+
+#[system(for_each)]
+pub fn update_physics() {
+
 }
