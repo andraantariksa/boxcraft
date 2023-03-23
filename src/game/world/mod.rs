@@ -91,8 +91,6 @@ impl World {
         let sender = self.to_world_tx.clone();
 
         rayon::spawn(move || {
-            log::info!("Calculating thread {:?}", thread::current().id());
-            thread::sleep(Duration::from_secs(2));
             let chunk = Chunk::with_block(Some(Block::new(BlockType::Dirt)), chunk_coord);
             sender.send(chunk).unwrap();
         });
