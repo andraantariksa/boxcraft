@@ -19,7 +19,6 @@ use parking_lot::Mutex;
 use std::time::Instant;
 
 use crate::game::world::World;
-use tokio::sync::mpsc::unbounded_channel;
 use winit::event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::CursorGrabMode;
@@ -47,6 +46,8 @@ impl Game {
         let camera = systems.get_resources().get::<Camera>().unwrap();
         let renderer = pollster::block_on(Renderer::new(&window, &camera, &mut debug_ui));
         drop(camera);
+
+        log::info!("Main thread {:?}", std::thread::current().id());
 
         Self {
             event_loop,
@@ -155,14 +156,14 @@ impl Game {
                     };
 
                     let mut world_blocks = self.systems.get_resources().get_mut::<World>().unwrap();
-                    // if world_blocks.update(&camera) {
-                    //     let block_raw_instances = world_blocks.get_block_raw_instances();
-                    //     self.renderer.game_renderer.update_blocks(
-                    //         &self.renderer.render_context,
-                    //         &block_raw_instances,
-                    //         block_raw_instances.len() as u32,
-                    //     );
-                    // }
+                    if world_blocks.update_chunk(&camera) {
+                        let block_raw_instances = world_blocks.get_block_raw_instances();
+                        self.renderer.game_renderer.update_blocks(
+                            &self.renderer.render_context,
+                            &block_raw_instances,
+                            block_raw_instances.len() as u32,
+                        );
+                    }
                     self.renderer.render(
                         &*camera,
                         &time_elapsed,

@@ -30,6 +30,10 @@ impl Chunk {
         Self::with_blocks(blocks, chunk_coord)
     }
 
+    pub fn get_chunk_coord(&self) -> &Vector2<i32> {
+        &self.chunk_coord
+    }
+
     pub fn with_blocks(blocks: Vec<Vec<Vec<Option<Block>>>>, chunk_coord: Vector2<i32>) -> Self {
         let world_coord_xz = World::get_world_coord_from_chunk_coord(&chunk_coord);
         let mut instance = Self {

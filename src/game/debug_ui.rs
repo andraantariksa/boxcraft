@@ -70,6 +70,7 @@ impl DebugUI {
             ui.window("Info")
                 .size([300.0, 300.0], Condition::FirstUseEver)
                 .build(|| {
+                    ui.text(format!("DT: {}", time_elapsed.as_secs_f32()));
                     ui.text("Camera");
                     ui.separator();
                     let mouse_pos = ui.io().mouse_pos;
@@ -82,17 +83,6 @@ impl DebugUI {
                     ui.text(format!("Direction: {}", camera.get_direction()));
                     ui.text(format!("Pos: {}", camera.position));
                 });
-            //
-            //     let window = imgui::Window::new("Hello too");
-            //     window
-            //         .size([400.0, 200.0], Condition::FirstUseEver)
-            //         .position([400.0, 200.0], Condition::FirstUseEver)
-            //         .build(&ui, || {
-            //             ui.text(format!("Frametime: {:?}", 123));
-            //         });
-            //
-            //     let mut demo_open = true;
-            //     ui.show_demo_window(&mut demo_open);
         }
 
         self.platform.prepare_render(&ui, window);

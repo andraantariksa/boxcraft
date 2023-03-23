@@ -5,17 +5,23 @@ pub mod generator;
 use crate::game::camera::Camera;
 use rayon::prelude::*;
 use std::collections::{HashMap, HashSet, VecDeque};
+use std::sync::mpsc::{channel, Receiver, Sender};
+use std::thread;
+use std::time::Duration;
 
 use crate::game::world::block::{Block, BlockType, RawFaceInstance};
 use crate::game::world::chunk::Chunk;
 
 use nalgebra::{try_convert, Point2, Vector2, Vector3};
-use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 
 pub struct World {
     visible_chunks: HashMap<Vector2<i32>, Chunk>,
     center_point_chunk_coord: Vector2<i32>,
     raw_face_instances: Vec<RawFaceInstance>,
+
+    enqueued_chunk: HashSet<Vector2<i32>>,
+    chunk_rx: Receiver<Chunk>,
+    to_world_tx: Sender<Chunk>,
 }
 
 impl World {
@@ -26,7 +32,7 @@ impl World {
     pub const FRONT: Vector3<f32> = Vector3::new(0.0, 0.0, 1.0);
     pub const BACK: Vector3<f32> = Vector3::new(0.0, 0.0, -1.0);
 
-    pub const RENDER_CHUNK: usize = 1;
+    pub const RENDER_CHUNK: usize = 3;
     pub const TOTAL_CHUNKS: usize = (Self::RENDER_CHUNK * 2 + 1) * (Self::RENDER_CHUNK * 2 + 1);
     pub const TOTAL_CHUNK_BLOCKS: usize = Chunk::MAXIMUM_TOTAL_BLOCKS * World::TOTAL_CHUNKS;
 
@@ -49,10 +55,15 @@ impl World {
             }
         }
 
+        let (to_world_tx, chunk_rx) = channel();
+
         Self {
             visible_chunks,
             center_point_chunk_coord,
             raw_face_instances,
+            enqueued_chunk: HashSet::new(),
+            chunk_rx,
+            to_world_tx,
         }
     }
 
@@ -76,10 +87,36 @@ impl World {
         block_raw_instances
     }
 
-    pub fn update(&mut self, camera: &Camera) -> bool {
+    fn enqueue(&self, chunk_coord: Vector2<i32>) {
+        let sender = self.to_world_tx.clone();
+
+        rayon::spawn(move || {
+            let chunk = Chunk::with_block(Some(Block::new(BlockType::Dirt)), chunk_coord);
+            sender.send(chunk).unwrap();
+        });
+    }
+
+    pub fn update_chunk(&mut self, camera: &Camera) -> bool {
+        let mut calculated_chunks = vec![];
+        while let Ok(chunk) = self.chunk_rx.try_recv() {
+            calculated_chunks.push(chunk);
+        }
+        let chunk_recreated = !calculated_chunks.is_empty();
+        if chunk_recreated {
+            log::info!("Recreated");
+            for chunk in calculated_chunks.into_iter() {
+                self.visible_chunks.insert(chunk.get_chunk_coord().clone(), chunk);
+            }
+
+            self.raw_face_instances.clear();
+            for chunk in self.visible_chunks.values() {
+                self.raw_face_instances
+                    .extend(chunk.get_raw_face_instances())
+            }
+        }
+
         let current_chunk_coord =
             Self::get_chunk_coord_from_world_coord(&camera.position.xz().coords);
-
         let is_moved_chunk = self.center_point_chunk_coord != current_chunk_coord;
         if is_moved_chunk {
             self.center_point_chunk_coord = current_chunk_coord;
@@ -112,26 +149,12 @@ impl World {
                 self.visible_chunks.remove(chunk_coord);
             }
 
-            let chunks = needed_chunk
-                .into_par_iter()
-                .map(|chunk_coord| {
-                    (
-                        chunk_coord,
-                        Chunk::with_block(Some(Block::new(BlockType::Dirt)), chunk_coord),
-                    )
-                })
-                .collect::<Vec<(Vector2<i32>, Chunk)>>();
-            for (chunk_coord, chunk) in chunks {
-                self.visible_chunks.insert(chunk_coord, chunk);
-            }
-
-            for chunk in self.visible_chunks.values() {
-                self.raw_face_instances
-                    .extend(chunk.get_raw_face_instances())
+            for chunk_coord in needed_chunk {
+                self.enqueue(chunk_coord);
             }
         }
 
-        is_moved_chunk
+        chunk_recreated
     }
 
     #[inline]
@@ -146,7 +169,7 @@ impl World {
     pub fn get_world_coord_from_chunk_coord(world_coord: &Vector2<i32>) -> Vector2<f32> {
         (world_coord * Chunk::CHUNK_SIDE_SIZE as i32
             + Vector2::from_element(Chunk::CHUNK_HALF_SIDE_SIZE as i32))
-        .cast::<f32>()
+            .cast::<f32>()
     }
 
     pub fn get_block_raw_instances(&mut self) -> &Vec<RawFaceInstance> {
@@ -155,7 +178,6 @@ impl World {
 }
 
 mod test {
-
     #[test]
     fn indices_to_world_coordinate() {}
 }
