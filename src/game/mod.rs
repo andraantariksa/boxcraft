@@ -1,12 +1,11 @@
 pub mod camera;
-pub mod debug_ui;
 pub mod player;
 pub mod systems;
 pub mod transform;
 pub mod world;
 
+use crate::debug_ui::DebugUI;
 use crate::game::camera::Camera;
-use crate::game::debug_ui::DebugUI;
 use std::sync::Arc;
 
 use crate::game::systems::Systems;
@@ -47,8 +46,6 @@ impl Game {
         let renderer = pollster::block_on(Renderer::new(&window, &camera, &mut debug_ui));
         drop(camera);
 
-        log::info!("Main thread {:?}", std::thread::current().id());
-
         Self {
             event_loop,
             debug_ui,
@@ -73,7 +70,7 @@ impl Game {
 
         let mut time_start = Instant::now();
         self.event_loop.run(move |event, _, control_flow| {
-            self.debug_ui.record_event(&self.window, &event);
+            self.debug_ui.record_event(&event);
             match event {
                 Event::WindowEvent {
                     event: ref window_event,
@@ -131,12 +128,13 @@ impl Game {
 
                     self.systems.update(time_elapsed);
 
-                    let debug_ui_render_state = self.debug_ui.update(
+                    self.debug_ui.update(
                         &self.systems.world,
                         &self.systems.resources,
                         &self.window,
                         &time_elapsed,
                     );
+                    let debug_ui_render_data = self.debug_ui.get_draw_data(&self.window);
 
                     let mut input_manager = self
                         .systems
@@ -168,7 +166,7 @@ impl Game {
                         &*camera,
                         &time_elapsed,
                         &self.window,
-                        &debug_ui_render_state,
+                        debug_ui_render_data,
                         &world_blocks,
                     );
 

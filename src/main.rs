@@ -1,3 +1,4 @@
+pub mod debug_ui;
 pub mod game;
 pub mod misc;
 pub mod renderer;

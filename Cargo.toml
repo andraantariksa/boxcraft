@@ -7,12 +7,12 @@ edition = "2021"
 bitflags = "2.0.2"
 image = "0.24.5"
 wgpu = { version = "0.15.1", features = ["spirv"] }
-winit = "0.27.2"
+winit = "0.28.3"
 nalgebra = "0.32.1"
 rapier3d = "0.17.1"
-imgui = "0.10.0"
-imgui-winit-support = { version = "0.10.0" }
-imgui-wgpu = "0.22.0"
+egui = "0.21.0"
+egui_wgpu_backend = "0.22.0"
+egui_winit_platform = "0.18.0"
 log = "0.4"
 env_logger = { version = "0.10", features = ["humantime", "regex"], default-features = false }
 pollster = "0.3.0"
