@@ -12,7 +12,7 @@ use wgpu::{
 };
 
 use crate::debug_ui::renderer::DebugUIRenderer;
-use crate::game::world::World;
+use crate::game::world::BoxWorld;
 use winit::dpi::PhysicalSize;
 
 pub mod camera;
@@ -49,7 +49,7 @@ impl Renderer {
         _time_elapsed: &Duration,
         window: &Window,
         debug_ui_render_state: DebugUIDrawData,
-        _world_blocks: &World,
+        _world_blocks: &BoxWorld,
     ) {
         self.game_renderer
             .prerender(&self.render_context, window, camera);

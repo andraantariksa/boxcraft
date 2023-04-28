@@ -1,15 +1,16 @@
-mod CappedDequeueVec;
+mod capped_dequeue_vec;
 mod inspect;
 pub mod renderer;
 
 use crate::game::camera::Camera;
 
-use crate::debug_ui::CappedDequeueVec::CappedVecDeque;
+use crate::debug_ui::capped_dequeue_vec::CappedVecDeque;
+use crate::game::player::Player;
+use bevy_ecs::prelude::World;
 use egui::emath::Numeric;
 use egui::plot::{Line, Plot, PlotPoints};
 use egui::{ClippedPrimitive, Color32, FontDefinitions, FullOutput, Style, TexturesDelta, Visuals};
 use egui_winit_platform::{Platform, PlatformDescriptor};
-use legion::{Resources, World};
 use std::time::Duration;
 use wgpu::RenderPass;
 use winit::dpi::PhysicalSize;
@@ -46,20 +47,15 @@ impl DebugUI {
         self.platform.handle_event(event);
     }
 
-    pub fn update(
-        &mut self,
-        _world: &World,
-        resources: &Resources,
-        window: &Window,
-        time_elapsed: &Duration,
-    ) {
+    pub fn update(&mut self, world: &World, window: &Window, time_elapsed: &Duration) {
         let time_elapsed = time_elapsed.as_secs_f64();
         self.platform.update_time(time_elapsed);
         self.platform.begin_frame();
 
         let ctx = self.platform.context();
 
-        let camera = resources.get::<Camera>().unwrap();
+        let player = world.get_resource::<Player>().unwrap();
+        let camera = world.get_resource::<Camera>().unwrap();
         let (camera_yaw, camera_pitch) = camera.get_yaw_pitch();
 
         ctx.set_style(Style {
@@ -86,6 +82,8 @@ impl DebugUI {
                 ui.label(format!("Yaw: {:.1} Pitch: {:.1}", camera_yaw, camera_pitch));
                 ui.label(format!("Direction: {}", camera.get_direction()));
                 ui.label(format!("Pos: {}", camera.position));
+                let mut a = player.flying;
+                ui.checkbox(&mut a, "Fly");
 
                 ui.separator();
 

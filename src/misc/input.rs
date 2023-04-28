@@ -1,20 +1,41 @@
 use nalgebra::Vector2;
-use std::collections::HashSet;
+use std::collections::hash_map::Entry;
+use std::collections::{HashMap, HashSet};
 
+use crate::game::systems::Time;
+use bevy_ecs::prelude::*;
 use winit::dpi::PhysicalPosition;
 use winit::event::{ElementState, KeyboardInput, VirtualKeyCode, WindowEvent};
 use winit::window::Window;
 
+#[derive(PartialEq)]
+enum DoublePressState {
+    FirstPress,
+    FirstRelease,
+}
+
+struct DoublePress {
+    timestamp: f32,
+    kind: DoublePressState,
+}
+
+#[derive(Resource)]
 pub struct InputManager {
     mouse_movement: Vector2<f32>,
     keyboard_pressed: HashSet<VirtualKeyCode>,
+    double_press_states: HashMap<VirtualKeyCode, DoublePress>,
+    double_pressed: HashSet<VirtualKeyCode>,
 }
+
+const DOUBLE_PRESS_MAX_INTERVAL: f32 = 300.0;
 
 impl InputManager {
     pub fn new() -> Self {
         Self {
             mouse_movement: Vector2::new(0.0, 0.0),
             keyboard_pressed: HashSet::new(),
+            double_press_states: HashMap::new(),
+            double_pressed: HashSet::new(),
         }
     }
 
@@ -22,8 +43,63 @@ impl InputManager {
         self.keyboard_pressed.contains(key)
     }
 
+    pub fn is_double_pressed(&self, key: &VirtualKeyCode) -> bool {
+        self.double_pressed.contains(key)
+    }
+
     pub fn get_mouse_movement(&self) -> &Vector2<f32> {
         &self.mouse_movement
+    }
+
+    fn resolve_double_press(
+        &mut self,
+        element_state: &ElementState,
+        v_key_code: &VirtualKeyCode,
+        timestamp: f32,
+    ) {
+        match element_state {
+            ElementState::Pressed => {
+                match self.double_press_states.entry(*v_key_code) {
+                    Entry::Occupied(entry) => {
+                        if entry.get().kind == DoublePressState::FirstRelease {
+                            let entry = entry.remove();
+
+                            if timestamp - entry.timestamp < DOUBLE_PRESS_MAX_INTERVAL {
+                                println!("Done");
+                                self.double_pressed.insert(*v_key_code);
+                            }
+                            println!("or not");
+                        }
+                    }
+                    Entry::Vacant(entry) => {
+                        println!("First press");
+                        entry.insert(DoublePress {
+                            timestamp,
+                            kind: DoublePressState::FirstPress,
+                        });
+                    }
+                };
+            }
+            ElementState::Released => {
+                let mut queue_to_delete = false;
+
+                if let Some(entry) = self.double_press_states.get_mut(v_key_code) {
+                    if timestamp - entry.timestamp < DOUBLE_PRESS_MAX_INTERVAL
+                        && entry.kind == DoublePressState::FirstPress
+                    {
+                        println!("First release");
+                        entry.kind = DoublePressState::FirstRelease;
+                    } else {
+                        println!("Deleted first release");
+                        queue_to_delete = true;
+                    }
+                }
+
+                if queue_to_delete {
+                    self.double_press_states.remove(v_key_code);
+                }
+            }
+        }
     }
 
     pub fn record_event(
@@ -31,6 +107,7 @@ impl InputManager {
         window: &Window,
         window_event: &WindowEvent,
         is_cursor_locked: bool,
+        timestamp: f32,
     ) {
         match window_event {
             WindowEvent::KeyboardInput {
@@ -51,6 +128,7 @@ impl InputManager {
                             self.keyboard_pressed.remove(v_key_code);
                         }
                     }
+                    self.resolve_double_press(state, v_key_code, timestamp);
                 }
             }
             WindowEvent::CursorMoved { position, .. } => {
@@ -79,5 +157,6 @@ impl InputManager {
     pub fn clear(&mut self) {
         self.mouse_movement = Vector2::zeros();
         self.keyboard_pressed.clear();
+        self.double_pressed.clear();
     }
 }

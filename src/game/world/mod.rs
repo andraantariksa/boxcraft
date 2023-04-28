@@ -1,8 +1,10 @@
 pub mod block;
 pub mod chunk;
 pub mod generator;
+pub mod voronoi;
 
 use crate::game::camera::Camera;
+use bevy_ecs::prelude::Resource;
 use rayon::prelude::*;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::mpsc::{channel, Receiver, Sender};
@@ -14,17 +16,16 @@ use crate::game::world::chunk::Chunk;
 
 use nalgebra::{try_convert, Point2, Vector2, Vector3};
 
-pub struct World {
+#[derive(Resource)]
+pub struct BoxWorld {
     visible_chunks: HashMap<Vector2<i32>, Chunk>,
     center_point_chunk_coord: Vector2<i32>,
     raw_face_instances: Vec<RawFaceInstance>,
 
     enqueued_chunk: HashSet<Vector2<i32>>,
-    chunk_rx: Receiver<Chunk>,
-    to_world_tx: Sender<Chunk>,
 }
 
-impl World {
+impl BoxWorld {
     pub const LEFT: Vector3<f32> = Vector3::new(-1.0, 0.0, 0.0);
     pub const RIGHT: Vector3<f32> = Vector3::new(1.0, 0.0, 0.0);
     pub const TOP: Vector3<f32> = Vector3::new(0.0, 1.0, 0.0);
@@ -34,7 +35,7 @@ impl World {
 
     pub const RENDER_CHUNK: usize = 3;
     pub const TOTAL_CHUNKS: usize = (Self::RENDER_CHUNK * 2 + 1) * (Self::RENDER_CHUNK * 2 + 1);
-    pub const TOTAL_CHUNK_BLOCKS: usize = Chunk::MAXIMUM_TOTAL_BLOCKS * World::TOTAL_CHUNKS;
+    pub const TOTAL_CHUNK_BLOCKS: usize = Chunk::MAXIMUM_TOTAL_BLOCKS * BoxWorld::TOTAL_CHUNKS;
 
     pub fn from(camera: &Camera) -> Self {
         let center_point_chunk_coord =
@@ -43,26 +44,25 @@ impl World {
             Vec::with_capacity(Self::TOTAL_CHUNK_BLOCKS * Block::TOTAL_FACES);
         let mut visible_chunks = HashMap::with_capacity(Self::TOTAL_CHUNKS);
 
-        let (to_world_tx, chunk_rx) = channel();
-
-        let world = Self {
-            visible_chunks,
-            center_point_chunk_coord,
-            raw_face_instances,
-            enqueued_chunk: HashSet::new(),
-            chunk_rx,
-            to_world_tx,
-        };
-
         let corner_relative_coord = Self::RENDER_CHUNK as i32;
+
         for x in -corner_relative_coord..=corner_relative_coord {
             for z in -corner_relative_coord..=corner_relative_coord {
                 let chunk_coord = center_point_chunk_coord + Vector2::new(x, z);
-                world.enqueue(chunk_coord);
+
+                // TODO use worker thread
+                let chunk = Chunk::with_block(Some(Block::new(BlockType::Dirt)), chunk_coord);
+                raw_face_instances.extend(chunk.get_raw_face_instances().into_iter());
+                visible_chunks.insert(chunk_coord, chunk);
             }
         }
 
-        world
+            Self {
+                visible_chunks,
+                center_point_chunk_coord,
+                raw_face_instances,
+                enqueued_chunk: HashSet::new(),
+            }
     }
 
     pub fn get_faces(&self) -> Vec<RawFaceInstance> {
@@ -85,18 +85,16 @@ impl World {
         block_raw_instances
     }
 
-    fn enqueue(&self, chunk_coord: Vector2<i32>) {
-        let sender = self.to_world_tx.clone();
-
+    fn enqueue(sender: Sender<Chunk>, chunk_coord: Vector2<i32>) {
         rayon::spawn(move || {
             let chunk = Chunk::with_block(Some(Block::new(BlockType::Dirt)), chunk_coord);
             sender.send(chunk).unwrap();
         });
     }
 
-    pub fn update_chunk(&mut self, camera: &Camera) -> bool {
+    pub fn update_chunk(&mut self, to_world_tx: &Sender<Chunk>, chunk_rx: &Receiver<Chunk>, camera: &Camera) -> bool {
         let mut calculated_chunks = vec![];
-        while let Ok(chunk) = self.chunk_rx.try_recv() {
+        while let Ok(chunk) = chunk_rx.try_recv() {
             calculated_chunks.push(chunk);
         }
         let chunk_recreated = !calculated_chunks.is_empty();
@@ -149,7 +147,7 @@ impl World {
             }
 
             for chunk_coord in needed_chunk {
-                self.enqueue(chunk_coord);
+                BoxWorld::enqueue(to_world_tx.clone(), chunk_coord);
             }
         }
 
@@ -171,7 +169,7 @@ impl World {
         .cast::<f32>()
     }
 
-    pub fn get_block_raw_instances(&mut self) -> &Vec<RawFaceInstance> {
+    pub fn get_block_raw_instances(&self) -> &Vec<RawFaceInstance> {
         &self.raw_face_instances
     }
 }
