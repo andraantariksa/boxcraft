@@ -62,10 +62,39 @@
 //     fn init(resources: &mut Resources);
 // }
 
+use crate::utils::time::get_timestamp;
 use bevy_ecs::prelude::*;
+use std::time::Duration;
 
 #[derive(Resource)]
 pub struct Time {
     pub dt: f32,
-    pub stamp: f32
+    pub stamp: f32,
+}
+
+impl Time {
+    pub fn new() -> Self {
+        Self {
+            dt: 0.0,
+            stamp: get_timestamp(),
+        }
+    }
+}
+
+impl From<f32> for Time {
+    fn from(value: f32) -> Self {
+        Self {
+            dt: value,
+            stamp: get_timestamp(),
+        }
+    }
+}
+
+impl From<Duration> for Time {
+    fn from(value: Duration) -> Self {
+        Self {
+            dt: value.as_secs_f32(),
+            stamp: get_timestamp(),
+        }
+    }
 }

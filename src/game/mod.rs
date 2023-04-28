@@ -7,8 +7,8 @@ pub mod systems;
 pub mod transform;
 pub mod world;
 
+use crate::debug_ui::DebugUI;
 use crate::game::camera::Camera;
-use crate::game::debug_ui::DebugUI;
 use std::sync::mpsc::{channel, Receiver, Sender};
 use std::sync::Arc;
 
@@ -26,6 +26,7 @@ use crate::game::player::{update_player, update_player_toggle_fly, Player};
 use crate::game::systems::Time;
 use crate::game::world::chunk::Chunk;
 use crate::game::world::BoxWorld;
+use crate::utils::time::get_timestamp;
 use winit::event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::CursorGrabMode;
@@ -58,6 +59,7 @@ impl Game {
         world.insert_resource(camera);
         world.insert_resource(InputManager::new());
         world.insert_resource(Player::new());
+        world.insert_resource(Time::new());
 
         let camera = world.get_resource::<Camera>().unwrap();
         let renderer = pollster::block_on(Renderer::new(&window, &camera, &mut debug_ui));
@@ -97,7 +99,7 @@ impl Game {
 
         let mut time_start = Instant::now();
         self.event_loop.run(move |event, _, control_flow| {
-            self.debug_ui.record_event(&self.window, &event);
+            self.debug_ui.record_event(&event);
             match event {
                 Event::WindowEvent {
                     event: ref window_event,
@@ -151,17 +153,13 @@ impl Game {
                 Event::MainEventsCleared => {
                     let time_elapsed = time_start.elapsed();
                     time_start = Instant::now();
-                    let current_timestamp = SystemTime::now()
-                        .duration_since(UNIX_EPOCH)
-                        .unwrap()
-                        .as_secs_f32();
 
-                    self.world.insert_resource(Time {
-                        dt: time_elapsed.as_secs_f32(),
-                        stamp: current_timestamp,
-                    });
+                    self.world.insert_resource(Time::from(time_elapsed));
 
                     self.schedule.run(&mut self.world);
+                    self.debug_ui
+                        .update(&self.world, &self.window, &time_elapsed);
+                    let debug_ui_render_data = self.debug_ui.get_draw_data(&self.window);
 
                     let debug_ui_render_state =
                         self.debug_ui
@@ -197,7 +195,7 @@ impl Game {
                         &*camera,
                         &time_elapsed,
                         &self.window,
-                        &debug_ui_render_state,
+                        debug_ui_render_data,
                         &world,
                     );
 

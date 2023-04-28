@@ -1,9 +1,8 @@
+use crate::debug_ui::{DebugUI, DebugUIDrawData};
 use crate::game::camera::Camera;
-use crate::game::debug_ui::{DebugUI, DebugUIRenderState};
 use crate::misc::window::Window;
 
 use crate::renderer::context::RenderContext;
-use crate::renderer::debug_ui_renderer::DebugUIRenderer;
 use crate::renderer::game_renderer::GameRenderer;
 
 use std::time::Duration;
@@ -12,12 +11,12 @@ use wgpu::{
     RenderPassDescriptor,
 };
 
+use crate::debug_ui::renderer::DebugUIRenderer;
 use crate::game::world::BoxWorld;
 use winit::dpi::PhysicalSize;
 
 pub mod camera;
 pub mod context;
-pub mod debug_ui_renderer;
 pub mod error;
 pub mod game_renderer;
 pub mod texture;
@@ -35,7 +34,7 @@ impl Renderer {
     pub async fn new(window: &Window, camera: &Camera, debug_ui: &mut DebugUI) -> Self {
         let render_context = RenderContext::new(window).await;
         let game_renderer = GameRenderer::new(&render_context, window, camera);
-        let debug_ui_renderer = DebugUIRenderer::new(&render_context, debug_ui);
+        let debug_ui_renderer = DebugUIRenderer::new(&render_context);
 
         Self {
             debug_ui_renderer,
@@ -49,7 +48,7 @@ impl Renderer {
         camera: &Camera,
         _time_elapsed: &Duration,
         window: &Window,
-        debug_ui_render_state: &DebugUIRenderState,
+        debug_ui_render_state: DebugUIDrawData,
         _world_blocks: &BoxWorld,
     ) {
         self.game_renderer
@@ -86,32 +85,18 @@ impl Renderer {
 
             self.game_renderer.render(&mut render_pass);
         }
-
-        {
-            let mut render_pass = command_encoder.begin_render_pass(&RenderPassDescriptor {
-                label: Some("Render pass descriptor"),
-                color_attachments: &[Some(RenderPassColorAttachment {
-                    view: &texture_view,
-                    resolve_target: None,
-                    ops: Operations {
-                        store: true,
-                        load: LoadOp::Load,
-                    },
-                })],
-                depth_stencil_attachment: None,
-            });
-            self.debug_ui_renderer
-                .render(
-                    &self.render_context,
-                    &mut render_pass,
-                    debug_ui_render_state,
-                )
-                .unwrap();
-        }
+        self.debug_ui_renderer.render(
+            &mut command_encoder,
+            &self.render_context,
+            &texture_view,
+            debug_ui_render_state,
+        );
 
         self.render_context
             .queue
             .submit(core::iter::once(command_encoder.finish()));
+
+        self.debug_ui_renderer.post_render();
 
         texture.present();
     }

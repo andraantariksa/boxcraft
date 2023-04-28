@@ -20,6 +20,7 @@ impl Player {
 pub fn update_player_toggle_fly(mut player: ResMut<Player>, input_manager: Res<InputManager>) {
     if input_manager.is_double_pressed(&VirtualKeyCode::Space) {
         player.flying = !player.flying;
+        println!("Toggle {}", player.flying);
     }
 }
 

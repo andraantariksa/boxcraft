@@ -27,7 +27,7 @@ pub struct InputManager {
     double_pressed: HashSet<VirtualKeyCode>,
 }
 
-const DOUBLE_PRESS_MAX_INTERVAL: f32 = 500.0;
+const DOUBLE_PRESS_MAX_INTERVAL: f32 = 300.0;
 
 impl InputManager {
     pub fn new() -> Self {
@@ -157,5 +157,6 @@ impl InputManager {
     pub fn clear(&mut self) {
         self.mouse_movement = Vector2::zeros();
         self.keyboard_pressed.clear();
+        self.double_pressed.clear();
     }
 }

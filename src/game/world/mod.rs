@@ -38,18 +38,19 @@ impl BoxWorld {
     pub const TOTAL_CHUNK_BLOCKS: usize = Chunk::MAXIMUM_TOTAL_BLOCKS * BoxWorld::TOTAL_CHUNKS;
 
     pub fn from(camera: &Camera) -> Self {
-        let corner_relative_coord = Self::RENDER_CHUNK as i32;
-
         let center_point_chunk_coord =
             Self::get_chunk_coord_from_world_coord(&camera.position.xz().coords);
         let mut raw_face_instances =
             Vec::with_capacity(Self::TOTAL_CHUNK_BLOCKS * Block::TOTAL_FACES);
         let mut visible_chunks = HashMap::with_capacity(Self::TOTAL_CHUNKS);
 
+        let corner_relative_coord = Self::RENDER_CHUNK as i32;
+
         for x in -corner_relative_coord..=corner_relative_coord {
             for z in -corner_relative_coord..=corner_relative_coord {
                 let chunk_coord = center_point_chunk_coord + Vector2::new(x, z);
 
+                // TODO use worker thread
                 let chunk = Chunk::with_block(Some(Block::new(BlockType::Dirt)), chunk_coord);
                 raw_face_instances.extend(chunk.get_raw_face_instances().into_iter());
                 visible_chunks.insert(chunk_coord, chunk);

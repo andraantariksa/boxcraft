@@ -12,6 +12,7 @@ pub struct RenderContext {
     pub device: wgpu::Device,
     pub queue: wgpu::Queue,
     pub render_surface_config: SurfaceConfiguration,
+    pub scale_factor: f64,
 }
 
 impl RenderContext {
@@ -58,6 +59,7 @@ impl RenderContext {
             render_surface_config,
             queue,
             device,
+            scale_factor: window.scale_factor(),
         }
     }
 
