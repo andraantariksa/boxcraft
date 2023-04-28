@@ -4,7 +4,9 @@ use std::collections::HashSet;
 use winit::dpi::PhysicalPosition;
 use winit::event::{ElementState, KeyboardInput, VirtualKeyCode, WindowEvent};
 use winit::window::Window;
+use bevy_ecs::prelude::*;
 
+#[derive(Resource)]
 pub struct InputManager {
     mouse_movement: Vector2<f32>,
     keyboard_pressed: HashSet<VirtualKeyCode>,

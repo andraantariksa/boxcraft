@@ -3,8 +3,8 @@ use crate::game::camera::Camera;
 use imgui::{Condition, DrawData, FontSource};
 
 use imgui_winit_support::WinitPlatform;
-use legion::{Resources, World};
 use std::time::Duration;
+use bevy_ecs::prelude::*;
 use wgpu::RenderPass;
 use winit::event::Event;
 use winit::window::Window;
@@ -50,8 +50,7 @@ impl DebugUI {
 
     pub fn update(
         &mut self,
-        _world: &World,
-        resources: &Resources,
+        world: &World,
         window: &Window,
         time_elapsed: &Duration,
     ) -> DebugUIRenderState {
@@ -63,7 +62,7 @@ impl DebugUI {
 
         // self.profile_ui.window(&ui);
 
-        let camera = resources.get::<Camera>().unwrap();
+        let camera = world.get_resource::<Camera>().unwrap();
         let (camera_yaw, camera_pitch) = camera.get_yaw_pitch();
 
         {

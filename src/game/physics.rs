@@ -1,5 +1,7 @@
-use nalgebra::Vector2;
+use crate::game::config::Config;
+use atomic_refcell::AtomicRef;
 use rapier3d::prelude::*;
+use nalgebra::Vector2;
 
 pub struct Physics {
     pub rigid_body_set: RigidBodySet,

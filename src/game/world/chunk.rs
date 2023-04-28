@@ -1,11 +1,12 @@
+use bevy_ecs::prelude::Resource;
 use crate::game::transform::Transform;
 use crate::game::world::block::{Block, RawFaceInstance};
-use crate::game::world::World;
+use crate::game::world::BoxWorld;
 use nalgebra::{Rotation3, Translation3, Vector2, Vector3};
 
 use super::block::BlockFace;
 
-#[derive(Clone)]
+#[derive(Clone, Resource)]
 pub struct Chunk {
     blocks: Vec<Vec<Vec<Option<Block>>>>,
     chunk_coord: Vector2<i32>,
@@ -35,7 +36,7 @@ impl Chunk {
     }
 
     pub fn with_blocks(blocks: Vec<Vec<Vec<Option<Block>>>>, chunk_coord: Vector2<i32>) -> Self {
-        let world_coord_xz = World::get_world_coord_from_chunk_coord(&chunk_coord);
+        let world_coord_xz = BoxWorld::get_world_coord_from_chunk_coord(&chunk_coord);
         let mut instance = Self {
             blocks,
             raw_face_instances: Vec::with_capacity(Self::MAXIMUM_TOTAL_BLOCKS),
