@@ -8,6 +8,7 @@ use bevy_ecs::prelude::*;
 use wgpu::RenderPass;
 use winit::event::Event;
 use winit::window::Window;
+use crate::game::player::Player;
 
 pub struct DebugUI {
     pub imgui: imgui::Context,
@@ -63,6 +64,7 @@ impl DebugUI {
         // self.profile_ui.window(&ui);
 
         let camera = world.get_resource::<Camera>().unwrap();
+        let player = world.get_resource::<Player>().unwrap();
         let (camera_yaw, camera_pitch) = camera.get_yaw_pitch();
 
         {
@@ -81,6 +83,7 @@ impl DebugUI {
                     ui.text(format!("Yaw: {:.1} Pitch: {:.1}", camera_yaw, camera_pitch));
                     ui.text(format!("Direction: {}", camera.get_direction()));
                     ui.text(format!("Pos: {}", camera.position));
+                    ui.text(format!("Fly {}", player.flying));
                 });
         }
 

@@ -20,10 +20,10 @@ use bevy_ecs::prelude::*;
 
 use bevy_ecs::system::SystemState;
 use parking_lot::Mutex;
-use std::time::Instant;
+use std::time::{Instant, SystemTime, UNIX_EPOCH};
 
-use crate::game::player::{Player, update_player};
-use crate::game::systems::ElapsedTime;
+use crate::game::player::{update_player, update_player_toggle_fly, Player};
+use crate::game::systems::Time;
 use crate::game::world::chunk::Chunk;
 use crate::game::world::BoxWorld;
 use winit::event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent};
@@ -63,7 +63,9 @@ impl Game {
         let renderer = pollster::block_on(Renderer::new(&window, &camera, &mut debug_ui));
 
         let mut schedule = Schedule::new();
-        schedule.add_system(update_player);
+        schedule
+            .add_system(update_player)
+            .add_system(update_player_toggle_fly);
 
         log::info!("Main thread {:?}", std::thread::current().id());
 
@@ -135,21 +137,29 @@ impl Game {
                         self.renderer.resize(*new_inner_size);
                     }
                     rest_window_event => {
-                        let mut input_manager =
-                            self.world.get_resource_mut::<InputManager>().unwrap();
+                        let mut state =
+                            SystemState::<(ResMut<InputManager>, Res<Time>)>::new(&mut self.world);
+                        let (mut input_manager, elapsed_time) = state.get_mut(&mut self.world);
                         input_manager.record_event(
                             &self.window,
                             rest_window_event,
                             self.is_cursor_locked,
+                            elapsed_time.stamp,
                         );
                     }
                 },
                 Event::MainEventsCleared => {
                     let time_elapsed = time_start.elapsed();
                     time_start = Instant::now();
+                    let current_timestamp = SystemTime::now()
+                        .duration_since(UNIX_EPOCH)
+                        .unwrap()
+                        .as_secs_f32();
 
-                    self.world
-                        .insert_resource(ElapsedTime(time_elapsed.as_secs_f32()));
+                    self.world.insert_resource(Time {
+                        dt: time_elapsed.as_secs_f32(),
+                        stamp: current_timestamp,
+                    });
 
                     self.schedule.run(&mut self.world);
 

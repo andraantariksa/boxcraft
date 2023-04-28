@@ -2,30 +2,35 @@ use crate::game::camera::Camera;
 
 use crate::misc::input::InputManager;
 
+use crate::game::systems::Time;
 use bevy_ecs::prelude::*;
 use winit::event::VirtualKeyCode;
-use crate::game::systems::ElapsedTime;
 
 #[derive(Resource)]
 pub struct Player {
-    flying: bool,
+    pub flying: bool,
 }
 
 impl Player {
     pub fn new() -> Self {
-        Self { flying: false }
+        Self { flying: true }
+    }
+}
+
+pub fn update_player_toggle_fly(mut player: ResMut<Player>, input_manager: Res<InputManager>) {
+    if input_manager.is_double_pressed(&VirtualKeyCode::Space) {
+        player.flying = !player.flying;
     }
 }
 
 pub fn update_player(
-    player: Res<Player>,
     mut camera: ResMut<Camera>,
     input_manager: Res<InputManager>,
-    elapsed_time: Res<ElapsedTime>,
+    elapsed_time: Res<Time>,
 ) {
     const SPEED_MOVEMENT: f32 = 100.0;
 
-    let delta_movement = SPEED_MOVEMENT * elapsed_time.0;
+    let delta_movement = SPEED_MOVEMENT * elapsed_time.dt;
     let right_direction = camera.get_direction_right_horizontally();
     let horizontal_direction = camera.get_direction_horizontally();
 

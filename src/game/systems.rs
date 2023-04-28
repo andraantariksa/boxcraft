@@ -65,4 +65,7 @@
 use bevy_ecs::prelude::*;
 
 #[derive(Resource)]
-pub struct ElapsedTime(pub f32);
+pub struct Time {
+    pub dt: f32,
+    pub stamp: f32
+}
