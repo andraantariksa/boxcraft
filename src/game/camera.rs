@@ -2,8 +2,9 @@ use crate::game::world::chunk::Chunk;
 use crate::renderer::camera::CameraBuffer;
 use nalgebra::{clamp, Matrix4, Perspective3, Point3, Vector2, Vector3};
 use std::time::Duration;
+use bevy_ecs::prelude::*;
 
-#[derive(Default)]
+#[derive(Default, Resource)]
 pub struct Camera {
     pub position: Point3<f32>,
     yaw: f32,

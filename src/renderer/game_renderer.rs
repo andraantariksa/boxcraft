@@ -75,7 +75,7 @@ impl GameRenderer {
                 });
 
         let texture_atlas =
-            Texture::load_bytes(render_context, include_bytes!("../assets/atlas.png")).unwrap();
+            Texture::load_bytes(render_context, include_bytes!("../../assets/atlas.png")).unwrap();
 
         let texture_bind_group_layout =
             render_context

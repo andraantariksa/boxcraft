@@ -9,17 +9,21 @@ image = "0.24.5"
 wgpu = { version = "0.15.1", features = ["spirv"] }
 winit = "0.27.2"
 nalgebra = "0.32.1"
-rapier3d = "0.17.1"
+rapier3d = { version = "0.17.1", features = ["simd-stable"] }
 imgui = "0.10.0"
 imgui-winit-support = { version = "0.10.0" }
 imgui-wgpu = "0.22.0"
 log = "0.4"
 env_logger = { version = "0.10", features = ["humantime", "regex"], default-features = false }
 pollster = "0.3.0"
-legion = "0.4.0"
+bevy_ecs = "0.10.1"
 atomic_refcell = "0.1.9"
 parking_lot = "0.12.1"
 rayon = "1.6.1"
+rand = "0.8.5"
+
+# World generation
+voronator = "0.2.1"
 
 [build-dependencies]
 shaderc = "0.8.0"

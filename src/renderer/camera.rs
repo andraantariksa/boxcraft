@@ -1,4 +1,3 @@
-
 use crate::game::camera::Camera;
 use crate::renderer::context::RenderContext;
 use crate::renderer::util::any_sized_as_u8_slice;

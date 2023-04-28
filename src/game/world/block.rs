@@ -1,6 +1,5 @@
 use crate::game::transform::Transform;
 use bitflags::bitflags;
-use legion::system;
 use nalgebra::{Matrix4, Vector2};
 use std::time::Duration;
 
@@ -111,5 +110,4 @@ pub enum BlockType {
     Cobblestone,
 }
 
-#[system(for_each)]
-fn update_chunk(_block: &mut Block, #[resource] _time_elapsed: &Duration) {}
+fn update_chunk(_block: &mut Block, _time_elapsed: &Duration) {}

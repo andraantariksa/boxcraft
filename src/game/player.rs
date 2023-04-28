@@ -2,42 +2,48 @@ use crate::game::camera::Camera;
 
 use crate::misc::input::InputManager;
 
-use legion::system;
-
-use std::time::Duration;
+use crate::game::systems::Time;
+use bevy_ecs::prelude::*;
 use winit::event::VirtualKeyCode;
 
+#[derive(Resource)]
 pub struct Player {
-    flying: bool,
+    pub flying: bool,
 }
 
 impl Player {
     pub fn new() -> Self {
-        Self { flying: false }
+        Self { flying: true }
     }
 }
 
-#[system(for_each)]
+pub fn update_player_toggle_fly(mut player: ResMut<Player>, input_manager: Res<InputManager>) {
+    if input_manager.is_double_pressed(&VirtualKeyCode::Space) {
+        player.flying = !player.flying;
+    }
+}
+
 pub fn update_player(
-    _player: &Player,
-    #[resource] camera: &mut Camera,
-    #[resource] input_manager: &InputManager,
-    #[resource] elapsed_time: &Duration,
+    mut camera: ResMut<Camera>,
+    input_manager: Res<InputManager>,
+    elapsed_time: Res<Time>,
 ) {
     const SPEED_MOVEMENT: f32 = 100.0;
 
-    let delta_movement = SPEED_MOVEMENT * elapsed_time.as_secs_f32();
+    let delta_movement = SPEED_MOVEMENT * elapsed_time.dt;
+    let right_direction = camera.get_direction_right_horizontally();
+    let horizontal_direction = camera.get_direction_horizontally();
 
     if input_manager.is_key_pressed(&VirtualKeyCode::A) {
-        camera.position -= delta_movement * camera.get_direction_right_horizontally();
+        camera.position -= delta_movement * right_direction;
     } else if input_manager.is_key_pressed(&VirtualKeyCode::D) {
-        camera.position += delta_movement * camera.get_direction_right_horizontally();
+        camera.position += delta_movement * right_direction;
     }
 
     if input_manager.is_key_pressed(&VirtualKeyCode::W) {
-        camera.position += delta_movement * camera.get_direction();
+        camera.position += delta_movement * horizontal_direction;
     } else if input_manager.is_key_pressed(&VirtualKeyCode::S) {
-        camera.position -= delta_movement * camera.get_direction();
+        camera.position -= delta_movement * horizontal_direction;
     }
 
     if input_manager.is_key_pressed(&VirtualKeyCode::Space) {
