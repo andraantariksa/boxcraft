@@ -1,4 +1,4 @@
-use crate::debug_ui::{DebugUI, DebugUIDrawData};
+use crate::ui::{UI, UIDrawData};
 use crate::game::camera::Camera;
 use crate::misc::window::Window;
 
@@ -6,12 +6,13 @@ use crate::renderer::context::RenderContext;
 use crate::renderer::game_renderer::GameRenderer;
 
 use std::time::Duration;
+use bevy_ecs::prelude::*;
 use wgpu::{
     Color, LoadOp, Operations, RenderPassColorAttachment, RenderPassDepthStencilAttachment,
     RenderPassDescriptor,
 };
 
-use crate::debug_ui::renderer::DebugUIRenderer;
+use crate::ui::renderer::DebugUIRenderer;
 use crate::game::world::BoxWorld;
 use winit::dpi::PhysicalSize;
 
@@ -23,21 +24,22 @@ pub mod texture;
 pub mod util;
 pub mod vertex;
 
+#[derive(Resource)]
 pub struct Renderer {
     pub render_context: RenderContext,
 
     pub game_renderer: GameRenderer,
-    pub debug_ui_renderer: DebugUIRenderer,
+    pub ui_renderer: DebugUIRenderer,
 }
 
 impl Renderer {
-    pub async fn new(window: &Window, camera: &Camera, debug_ui: &mut DebugUI) -> Self {
+    pub async fn new(window: &Window, camera: &Camera, _ui: &mut UI) -> Self {
         let render_context = RenderContext::new(window).await;
         let game_renderer = GameRenderer::new(&render_context, window, camera);
-        let debug_ui_renderer = DebugUIRenderer::new(&render_context);
+        let ui_renderer = DebugUIRenderer::new(&render_context);
 
         Self {
-            debug_ui_renderer,
+            ui_renderer,
             game_renderer,
             render_context,
         }
@@ -48,7 +50,7 @@ impl Renderer {
         camera: &Camera,
         _time_elapsed: &Duration,
         window: &Window,
-        debug_ui_render_state: DebugUIDrawData,
+        ui_render_state: UIDrawData,
         _world_blocks: &BoxWorld,
     ) {
         self.game_renderer
@@ -85,18 +87,18 @@ impl Renderer {
 
             self.game_renderer.render(&mut render_pass);
         }
-        self.debug_ui_renderer.render(
+        self.ui_renderer.render(
             &mut command_encoder,
             &self.render_context,
             &texture_view,
-            debug_ui_render_state,
+            ui_render_state,
         );
 
         self.render_context
             .queue
             .submit(core::iter::once(command_encoder.finish()));
 
-        self.debug_ui_renderer.post_render();
+        self.ui_renderer.post_render();
 
         texture.present();
     }

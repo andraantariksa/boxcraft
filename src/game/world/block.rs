@@ -1,10 +1,10 @@
-use crate::game::transform::Transform;
+use crate::game::components::transform::Transform;
 use bitflags::bitflags;
 use nalgebra::{Matrix4, Vector2};
 use std::time::Duration;
 
 bitflags! {
-    #[derive(Clone, PartialEq)]
+    #[derive(Clone, PartialEq, Debug)]
     pub struct BlockFace: u8 {
         const FRONT = 0b00000001;
         const BACK = 0b00000010;

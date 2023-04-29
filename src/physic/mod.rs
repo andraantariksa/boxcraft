@@ -1,8 +1,10 @@
-use crate::game::config::Config;
-use atomic_refcell::AtomicRef;
-use rapier3d::prelude::*;
-use nalgebra::Vector2;
 
+
+use rapier3d::prelude::*;
+
+use bevy_ecs::prelude::*;
+
+#[derive(Resource)]
 pub struct Physics {
     pub rigid_body_set: RigidBodySet,
     pub collider_set: ColliderSet,

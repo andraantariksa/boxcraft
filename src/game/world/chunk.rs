@@ -1,5 +1,5 @@
 use bevy_ecs::prelude::Resource;
-use crate::game::transform::Transform;
+use crate::game::components::transform::Transform;
 use crate::game::world::block::{Block, RawFaceInstance};
 use crate::game::world::BoxWorld;
 use nalgebra::{Rotation3, Translation3, Vector2, Vector3};
@@ -21,10 +21,10 @@ impl Chunk {
         Self::CHUNK_SIDE_BLOCK * Self::CHUNK_SIDE_BLOCK * Self::CHUNK_VERTICAL_BLOCK;
 
     pub const CHUNK_SIDE_SIZE: f32 = Self::CHUNK_SIDE_BLOCK as f32 * Block::SIZE;
-    pub const CHUNK_HALF_SIDE_SIZE: f32 = Self::CHUNK_SIDE_SIZE as f32 * 0.5;
+    pub const CHUNK_HALF_SIDE_SIZE: f32 = Self::CHUNK_SIDE_SIZE * 0.5;
 
     pub fn with_block(block: Option<Block>, chunk_coord: Vector2<i32>) -> Self {
-        let mut blocks = vec![
+        let blocks = vec![
             vec![vec![block; Self::CHUNK_SIDE_BLOCK]; Self::CHUNK_VERTICAL_BLOCK];
             Self::CHUNK_SIDE_BLOCK
         ];

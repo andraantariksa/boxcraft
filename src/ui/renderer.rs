@@ -1,10 +1,10 @@
-use crate::debug_ui::{DebugUI, DebugUIDrawData};
+use crate::ui::{UIDrawData};
 use crate::renderer::context::RenderContext;
 use egui::TexturesDelta;
 
 use egui_wgpu_backend::{RenderPass as EguiRenderPass, ScreenDescriptor};
 
-use wgpu::{CommandEncoder, RenderPass, TextureView};
+use wgpu::{CommandEncoder, TextureView};
 
 pub struct DebugUIRenderer {
     egui_rpass: EguiRenderPass,
@@ -13,7 +13,7 @@ pub struct DebugUIRenderer {
 
 impl DebugUIRenderer {
     pub fn new(render_context: &RenderContext) -> Self {
-        let mut egui_rpass = EguiRenderPass::new(
+        let egui_rpass = EguiRenderPass::new(
             &render_context.device,
             render_context.render_surface_config.format,
             1,
@@ -29,7 +29,7 @@ impl DebugUIRenderer {
         encoder: &mut CommandEncoder,
         render_context: &RenderContext,
         output_view: &TextureView,
-        draw_data: DebugUIDrawData,
+        draw_data: UIDrawData,
     ) {
         self.egui_rpass
             .add_textures(
