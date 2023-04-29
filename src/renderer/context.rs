@@ -113,8 +113,8 @@ impl RenderContext {
         //
         //     game_renderer.render(&mut render_pass);
         //
-        //     debug_ui_renderer
-        //         .render(self, &mut render_pass, debug_ui_render_state)
+        //     ui_renderer
+        //         .render(self, &mut render_pass, ui_render_state)
         //         .unwrap();
         // }
         //

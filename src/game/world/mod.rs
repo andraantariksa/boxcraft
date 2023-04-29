@@ -6,15 +6,15 @@ pub mod voronoi;
 use crate::game::camera::Camera;
 use bevy_ecs::prelude::Resource;
 use rayon::prelude::*;
-use std::collections::{HashMap, HashSet, VecDeque};
-use std::sync::mpsc::{channel, Receiver, Sender};
-use std::thread;
-use std::time::Duration;
+use std::collections::{HashMap, HashSet};
+use std::sync::mpsc::{Receiver, Sender};
+
+
 
 use crate::game::world::block::{Block, BlockType, RawFaceInstance};
 use crate::game::world::chunk::Chunk;
 
-use nalgebra::{try_convert, Point2, Vector2, Vector3};
+use nalgebra::{try_convert, Vector2, Vector3};
 
 #[derive(Resource)]
 pub struct BoxWorld {
@@ -102,7 +102,7 @@ impl BoxWorld {
             log::info!("Recreated");
             for chunk in calculated_chunks.into_iter() {
                 self.visible_chunks
-                    .insert(chunk.get_chunk_coord().clone(), chunk);
+                    .insert(*chunk.get_chunk_coord(), chunk);
             }
 
             self.raw_face_instances.clear();
@@ -139,7 +139,7 @@ impl BoxWorld {
                     (diff.x as f32 * diff.x as f32 + diff.y as f32 * diff.y as f32).sqrt() as i32;
                 let max_diff = Self::RENDER_CHUNK as i32;
                 if diagonal_diff > max_diff {
-                    chunk_to_remove.push(chunk_coord.clone());
+                    chunk_to_remove.push(*chunk_coord);
                 }
             }
             for chunk_coord in chunk_to_remove.iter() {

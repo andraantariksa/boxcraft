@@ -18,8 +18,8 @@ impl Voronoi {
             &to_voronator_tuple(&bounding_box_top_left),
             &to_voronator_tuple(&bounding_box_bottom_right),
             &points
-                .into_iter()
-                .map(|point| to_voronator_tuple(point))
+                .iter()
+                .map(to_voronator_tuple)
                 .collect::<Vec<(f64, f64)>>()[..],
         )
         .unwrap();
