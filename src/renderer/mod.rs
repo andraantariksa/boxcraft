@@ -1,19 +1,19 @@
-use crate::ui::{UI, UIDrawData};
 use crate::game::camera::Camera;
 use crate::misc::window::Window;
+use crate::ui::{UIDrawData, UI};
 
 use crate::renderer::context::RenderContext;
 use crate::renderer::game_renderer::GameRenderer;
 
-use std::time::Duration;
 use bevy_ecs::prelude::*;
+use std::time::Duration;
 use wgpu::{
     Color, LoadOp, Operations, RenderPassColorAttachment, RenderPassDepthStencilAttachment,
     RenderPassDescriptor,
 };
 
-use crate::ui::renderer::DebugUIRenderer;
 use crate::game::world::BoxWorld;
+use crate::ui::renderer::DebugUIRenderer;
 use winit::dpi::PhysicalSize;
 
 pub mod camera;
@@ -33,7 +33,7 @@ pub struct Renderer {
 }
 
 impl Renderer {
-    pub async fn new(window: &Window, camera: &Camera, _ui: &mut UI) -> Self {
+    pub async fn new(window: &Window, camera: &Camera) -> Self {
         let render_context = RenderContext::new(window).await;
         let game_renderer = GameRenderer::new(&render_context, window, camera);
         let ui_renderer = DebugUIRenderer::new(&render_context);

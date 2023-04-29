@@ -1,5 +1,3 @@
-
-
 use rapier3d::prelude::*;
 
 use bevy_ecs::prelude::*;
@@ -47,14 +45,47 @@ impl Physics {
             &mut self.island_manager,
             &mut self.broad_phase,
             &mut self.narrow_phase,
-            &mut Default::default(),
-            &mut Default::default(),
-            &mut Default::default(),
-            &mut Default::default(),
-            &mut Default::default(),
+            &mut self.rigid_body_set,
+            &mut self.collider_set,
+            &mut self.impulse_joint_set,
+            &mut self.multibody_joint_set,
+            &mut self.ccd_solver,
             None,
             &self.physics_hooks,
             &self.event_handler,
         );
     }
 }
+
+// pub struct PhysicsCommand {
+//     deleted_handle: Vec<RigidBodyHandle>,
+// }
+//
+// impl PhysicsCommand {
+//     pub fn new() -> Self {
+//         Self {
+//             deleted_handle: Vec::new(),
+//         }
+//     }
+// }
+//
+// pub fn init_physics(world: &mut World) {
+//     world.insert_resource(PhysicsCommand::new());
+// }
+//
+// pub fn process_command(command: Res<PhysicsCommand>, mut physics: ResMut<Physics>) {
+//     for handle in command.deleted_handle {
+//         physics
+//             .rigid_body_set
+//             .remove(
+//                 handle,
+//                 &mut physics.island_manager,
+//                 &mut physics.collider_set,
+//                 &mut physics.impulse_joint_set,
+//                 &mut physics.multibody_joint_set,
+//                 true,
+//             )
+//             .unwrap();
+//     }
+//     command.deleted_handle.clear();
+// }

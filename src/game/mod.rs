@@ -18,7 +18,9 @@ use bevy_ecs::system::SystemState;
 
 use std::time::Instant;
 
-use crate::game::player::{update_player, update_player_toggle_fly, Player};
+use crate::game::player::{
+    init_player, update_player, update_player_physics, update_player_toggle_fly, Player,
+};
 use crate::game::systems::Time;
 use crate::game::world::chunk::Chunk;
 use crate::game::world::BoxWorld;
@@ -50,20 +52,22 @@ impl Game {
         let camera = Camera::new();
         let mut ui = UI::new(&window);
 
-        let renderer = pollster::block_on(Renderer::new(&window, &camera, &mut ui));
+        let renderer = pollster::block_on(Renderer::new(&window, &camera));
 
         world.insert_resource(BoxWorld::from(&camera));
         world.insert_resource(camera);
         world.insert_resource(InputManager::new());
-        world.insert_resource(Player::new());
         world.insert_resource(Time::new());
         world.insert_resource(ui);
         world.insert_resource(Physics::new());
+
+        Schedule::new().add_system(init_player).run(&mut world);
 
         let mut schedule = Schedule::new();
         schedule
             .add_system(update_player)
             .add_system(update_player_toggle_fly)
+            .add_system(update_player_physics)
             .add_system(update_draw_ui);
 
         log::info!("Main thread {:?}", std::thread::current().id());
@@ -176,6 +180,9 @@ impl Game {
         {
             let mut ui = self.world.get_resource_mut::<UI>().unwrap();
             ui.pre_update(time_elapsed.as_secs_f64());
+
+            let mut physics = self.world.get_resource_mut::<Physics>().unwrap();
+            physics.update();
         }
         self.schedule.run(&mut self.world);
 
