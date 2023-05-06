@@ -1,8 +1,10 @@
 use crate::game::world::chunk::Chunk;
+use crate::game::Game;
+use crate::plugin::Plugin;
 use crate::renderer::camera::CameraBuffer;
+use bevy_ecs::prelude::*;
 use nalgebra::{clamp, Matrix4, Perspective3, Point3, Vector2, Vector3};
 use std::time::Duration;
-use bevy_ecs::prelude::*;
 
 #[derive(Default, Resource)]
 pub struct Camera {
@@ -84,5 +86,13 @@ impl Camera {
             position: self.position,
             _p0: 0.0,
         }
+    }
+}
+
+pub struct CameraPlugin;
+
+impl Plugin for CameraPlugin {
+    fn register_init(&self, world: &mut World, init_schedule: &mut Schedule) {
+        world.insert_resource(Camera::new());
     }
 }

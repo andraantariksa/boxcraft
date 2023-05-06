@@ -5,27 +5,27 @@ pub mod player;
 pub mod systems;
 pub mod world;
 
-use crate::game::camera::Camera;
+use crate::game::camera::{Camera, CameraPlugin};
 use crate::ui::{update_draw_ui, UI};
 use std::sync::mpsc::{channel, Receiver, Sender};
 
-use crate::misc::input::InputManager;
+use crate::app::input::InputManager;
 use crate::misc::window::Window;
 use crate::renderer::Renderer;
 use bevy_ecs::prelude::*;
+use bevy_ecs::schedule::SystemSet;
 
 use bevy_ecs::system::SystemState;
-
 use std::time::Instant;
 
-use crate::game::player::{
-    init_player, update_player, update_player_physics, update_player_toggle_fly, Player,
-};
+use crate::game::player::{update_player, update_player_toggle_fly, Player, PlayerPlugin};
 use crate::game::systems::Time;
 use crate::game::world::chunk::Chunk;
 use crate::game::world::BoxWorld;
-use crate::physic::Physics;
+use crate::physic::{Physics, PhysicsPlugin};
 
+use crate::app::input::plugins::InputPlugin;
+use crate::plugin::Plugin;
 use winit::event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
 
@@ -49,25 +49,29 @@ impl Game {
         let window = Window::new(&event_loop);
 
         let mut world = World::new();
-        let camera = Camera::new();
         let mut ui = UI::new(&window);
 
+        let plugins: &[&dyn Plugin] = &[&InputPlugin, &PhysicsPlugin, &CameraPlugin, &PlayerPlugin];
+        let mut init_schedule = Schedule::new();
+        for plugin in plugins.iter() {
+            plugin.register_init(&mut world, &mut init_schedule);
+        }
+        init_schedule.run(&mut world);
+
+        let camera = world.get_resource::<Camera>().unwrap();
         let renderer = pollster::block_on(Renderer::new(&window, &camera));
 
         world.insert_resource(BoxWorld::from(&camera));
-        world.insert_resource(camera);
-        world.insert_resource(InputManager::new());
         world.insert_resource(Time::new());
         world.insert_resource(ui);
-        world.insert_resource(Physics::new());
-
-        Schedule::new().add_system(init_player).run(&mut world);
 
         let mut schedule = Schedule::new();
+        for plugin in plugins.iter() {
+            plugin.register_runtime(&mut world, &mut schedule);
+        }
         schedule
             .add_system(update_player)
             .add_system(update_player_toggle_fly)
-            .add_system(update_player_physics)
             .add_system(update_draw_ui);
 
         log::info!("Main thread {:?}", std::thread::current().id());
@@ -217,7 +221,11 @@ impl Game {
         }
         self.renderer
             .render(&camera, &time_elapsed, &self.window, ui_render_data, &world);
-
-        input_manager.clear();
     }
+}
+
+#[derive(Debug, Eq, PartialEq, SystemSet, Hash, Clone)]
+pub enum ScheduleStage {
+    Update,
+    Render,
 }

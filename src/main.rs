@@ -1,3 +1,4 @@
+mod app;
 pub mod game;
 pub mod misc;
 pub mod physic;

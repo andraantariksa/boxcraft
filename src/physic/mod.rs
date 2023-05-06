@@ -1,5 +1,6 @@
 use rapier3d::prelude::*;
 
+use crate::plugin::Plugin;
 use bevy_ecs::prelude::*;
 
 #[derive(Resource)]
@@ -54,6 +55,14 @@ impl Physics {
             &self.physics_hooks,
             &self.event_handler,
         );
+    }
+}
+
+pub struct PhysicsPlugin;
+
+impl Plugin for PhysicsPlugin {
+    fn register_init(&self, world: &mut World, init_schedule: &mut Schedule) {
+        world.insert_resource(Physics::new());
     }
 }
 

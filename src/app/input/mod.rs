@@ -1,3 +1,5 @@
+pub mod plugins;
+
 use nalgebra::Vector2;
 use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet};

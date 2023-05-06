@@ -1,6 +1,6 @@
 use crate::game::camera::Camera;
 
-use crate::misc::input::InputManager;
+use crate::app::input::InputManager;
 
 use crate::game::systems::Time;
 use crate::physic::Physics;
@@ -80,27 +80,43 @@ pub fn update_player(
     rb.set_translation(translation, false);
 }
 
-pub fn init_player(mut commands: Commands, mut physics: ResMut<Physics>, camera: Res<Camera>) {
-    let physics = &mut *physics;
+pub struct PlayerPlugin;
 
-    let rb = RigidBodyBuilder::dynamic()
-        .position(Isometry::from(camera.position))
-        .build();
-    let rb_handle = physics.rigid_body_set.insert(rb);
+impl Plugin for PlayerPlugin {
+    fn register_init(&self, world: &mut World, init_schedule: &mut Schedule) {
+        pub fn init_player(
+            mut commands: Commands,
+            mut physics: ResMut<Physics>,
+            camera: Res<Camera>,
+        ) {
+            let physics = &mut *physics;
 
-    let col = ColliderBuilder::ball(1.0);
-    physics
-        .collider_set
-        .insert_with_parent(col, rb_handle, &mut physics.rigid_body_set);
+            let rb = RigidBodyBuilder::dynamic()
+                .position(Isometry::from(camera.position))
+                .build();
+            let rb_handle = physics.rigid_body_set.insert(rb);
 
-    commands.insert_resource(Player::from(rb_handle));
-}
+            let col = ColliderBuilder::ball(1.0);
+            physics
+                .collider_set
+                .insert_with_parent(col, rb_handle, &mut physics.rigid_body_set);
 
-pub fn update_player_physics(
-    player: Res<Player>,
-    mut physics: ResMut<Physics>,
-    mut camera: ResMut<Camera>,
-) {
-    let rb = physics.rigid_body_set.get_mut(player.rb_handle).unwrap();
-    camera.position = Point::from(*rb.translation());
+            commands.insert_resource(Player::from(rb_handle));
+        }
+
+        init_schedule.add_system(init_player);
+    }
+
+    fn register_runtime(&self, world: &mut World, schedule: &mut Schedule) {
+        pub fn update_player_physics(
+            player: Res<Player>,
+            mut physics: ResMut<Physics>,
+            mut camera: ResMut<Camera>,
+        ) {
+            let rb = physics.rigid_body_set.get_mut(player.rb_handle).unwrap();
+            camera.position = Point::from(*rb.translation());
+        }
+
+        schedule.add_system(update_player_physics);
+    }
 }
