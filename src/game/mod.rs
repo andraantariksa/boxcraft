@@ -26,6 +26,8 @@ use crate::physic::{Physics, PhysicsPlugin};
 
 use crate::app::input::plugins::InputPlugin;
 use crate::plugin::Plugin;
+use crate::renderer::game_renderer::GameRenderer;
+use crate::renderer::plugins::RendererPlugin;
 use winit::event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
 
@@ -34,7 +36,6 @@ pub struct Game {
     window: Window,
     is_cursor_locked: bool,
 
-    renderer: Renderer,
     world: World,
     schedule: Schedule,
 
@@ -51,7 +52,13 @@ impl Game {
         let mut world = World::new();
         let mut ui = UI::new(&window);
 
-        let plugins: &[&dyn Plugin] = &[&InputPlugin, &PhysicsPlugin, &CameraPlugin, &PlayerPlugin];
+        let plugins: &[&dyn Plugin] = &[
+            &InputPlugin,
+            &PhysicsPlugin,
+            &CameraPlugin,
+            &PlayerPlugin,
+            &RendererPlugin,
+        ];
         let mut init_schedule = Schedule::new();
         for plugin in plugins.iter() {
             plugin.register_init(&mut world, &mut init_schedule);
@@ -59,9 +66,12 @@ impl Game {
         init_schedule.run(&mut world);
 
         let camera = world.get_resource::<Camera>().unwrap();
-        let renderer = pollster::block_on(Renderer::new(&window, &camera));
-
-        world.insert_resource(BoxWorld::from(&camera));
+        let bw = BoxWorld::from(&camera);
+        let r = pollster::block_on(Renderer::new(&window));
+        let gr = GameRenderer::new(&r.render_context, &window, camera);
+        world.insert_resource(bw);
+        world.insert_resource(gr);
+        world.insert_resource(r);
         world.insert_resource(Time::new());
         world.insert_resource(ui);
 
@@ -81,7 +91,6 @@ impl Game {
         Self {
             event_loop: Some(event_loop),
             window,
-            renderer,
             world,
             schedule,
             is_cursor_locked: true,
@@ -93,10 +102,15 @@ impl Game {
 
     pub fn run_loop(mut self) {
         {
-            let world_blocks = self.world.get_resource::<BoxWorld>().unwrap();
+            let mut state =
+                SystemState::<(ResMut<BoxWorld>, Res<Renderer>, ResMut<GameRenderer>)>::new(
+                    &mut self.world,
+                );
+            let (mut world_blocks, renderer, mut game_renderer) = state.get_mut(&mut self.world);
+
             let block_raw_instances = world_blocks.get_block_raw_instances();
-            self.renderer.game_renderer.update_blocks(
-                &self.renderer.render_context,
+            game_renderer.update_blocks(
+                &renderer.render_context,
                 block_raw_instances,
                 block_raw_instances.len() as u32,
             );
@@ -152,14 +166,16 @@ impl Game {
             }
             WindowEvent::Resized(ref new_inner_size) => {
                 self.window.on_resized(new_inner_size);
-                self.renderer.resize(new_inner_size);
+                let mut renderer = self.world.get_resource_mut::<Renderer>().unwrap();
+                renderer.resize(new_inner_size);
             }
             WindowEvent::ScaleFactorChanged {
                 scale_factor: _,
                 new_inner_size,
             } => {
                 self.window.on_resized(new_inner_size);
-                self.renderer.resize(new_inner_size);
+                let mut renderer = self.world.get_resource_mut::<Renderer>().unwrap();
+                renderer.resize(new_inner_size);
             }
             rest_window_event => {
                 let mut state =
@@ -169,7 +185,7 @@ impl Game {
                     &self.window,
                     rest_window_event,
                     self.is_cursor_locked,
-                    elapsed_time.stamp,
+                    elapsed_time.start,
                 );
             }
         }
@@ -193,34 +209,30 @@ impl Game {
         let mut state = SystemState::<(
             ResMut<InputManager>,
             ResMut<Camera>,
-            ResMut<BoxWorld>,
+            Res<GameRenderer>,
             ResMut<UI>,
+            ResMut<Renderer>,
         )>::new(&mut self.world);
-        let (mut input_manager, mut camera, mut world, mut ui) = state.get_mut(&mut self.world);
+        let (mut input_manager, mut camera, game_renderer, mut ui, mut renderer) =
+            state.get_mut(&mut self.world);
 
         let ui_render_data = ui.get_draw_data(&self.window);
 
         let mouse_movement = input_manager.get_mouse_movement();
-        camera.move_by_offset(mouse_movement, &time_elapsed);
+        camera.update(mouse_movement, &time_elapsed);
 
-        let is_f2_pressed = input_manager.is_key_pressed(&VirtualKeyCode::F2);
-        if is_f2_pressed {
-            self.renderer.game_renderer.set_display_wireframe_only(
-                &self.renderer.render_context,
-                !self.renderer.game_renderer.is_wireframe_only(),
-            );
-        };
+        // if world.update_chunk(&self.to_world_tx, &self.chunk_rx, &camera) {
+        //     let block_raw_instances = world.get_block_raw_instances();
+        //     let mut renderer = se
+        //     renderer.game_renderer.update_blocks(
+        //         &self.renderer.render_context,
+        //         block_raw_instances,
+        //         block_raw_instances.len() as u32,
+        //     );
+        // }
 
-        if world.update_chunk(&self.to_world_tx, &self.chunk_rx, &camera) {
-            let block_raw_instances = world.get_block_raw_instances();
-            self.renderer.game_renderer.update_blocks(
-                &self.renderer.render_context,
-                block_raw_instances,
-                block_raw_instances.len() as u32,
-            );
-        }
-        self.renderer
-            .render(&camera, &time_elapsed, &self.window, ui_render_data, &world);
+        renderer.render(&camera, &self.window, ui_render_data, &game_renderer);
+        input_manager.clear();
     }
 }
 

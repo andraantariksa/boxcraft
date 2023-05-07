@@ -53,7 +53,7 @@ impl Camera {
             .normalize()
     }
 
-    pub fn move_by_offset(&mut self, offset: &Vector2<f32>, time_elapsed: &Duration) {
+    pub fn update(&mut self, offset: &Vector2<f32>, time_elapsed: &Duration) {
         let time_elapsed_sec = time_elapsed.as_secs_f32();
         let timed_offset = offset * time_elapsed_sec * 10.0;
 

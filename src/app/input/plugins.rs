@@ -11,10 +11,14 @@ impl Plugin for InputPlugin {
     }
 
     fn register_runtime(&self, world: &mut World, schedule: &mut Schedule) {
-        fn clear(mut input_manager: ResMut<InputManager>) {
-            input_manager.clear();
-        }
-
-        schedule.add_system(clear.after(ScheduleStage::Render));
+        // fn clear(mut input_manager: ResMut<InputManager>) {
+        //     input_manager.clear();
+        // }
+        //
+        // schedule.add_system(
+        //     clear
+        //         .after(ScheduleStage::Render)
+        //         .after(ScheduleStage::Update),
+        // );
     }
 }

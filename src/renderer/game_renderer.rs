@@ -8,6 +8,7 @@ use nalgebra::{Point3, Vector2, Vector3};
 
 use crate::game::world::block::RawFaceInstance;
 use crate::renderer::texture::Texture;
+use bevy_ecs::prelude::*;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{
     include_spirv, BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayoutDescriptor,
@@ -19,6 +20,7 @@ use wgpu::{
     VertexBufferLayout,
 };
 
+#[derive(Resource)]
 pub struct GameRenderer {
     camera_renderer: CameraRenderer,
     camera_bind_group: BindGroup,
@@ -36,7 +38,6 @@ pub struct GameRenderer {
     cubes_pipeline_layout: PipelineLayout,
 
     texture_atlas: Texture,
-    pub depth_texture: Texture,
 
     blocks_total: u32,
 }
@@ -235,7 +236,6 @@ impl GameRenderer {
             write_mask: ColorWrites::all(),
         })];
 
-        let depth_texture = Texture::new_depth(render_context);
         let render_pipeline_descriptor = RenderPipelineDescriptor {
             label: Some("Create render pipeline: Render pipeline descriptor"),
             layout: Some(&game_pipeline_layout),
@@ -295,7 +295,6 @@ impl GameRenderer {
             color_targets_state,
             block_instance_vertex_buffer_layout, // render_pipeline_descriptor,
             blocks_total: 0,
-            depth_texture,
             texture_atlas,
             texture_bind_group,
         }
@@ -317,11 +316,6 @@ impl GameRenderer {
                     usage: BufferUsages::VERTEX,
                 })
     }
-
-    pub fn resize(&mut self, render_context: &RenderContext) {
-        self.depth_texture = Texture::new_depth(render_context);
-    }
-
     pub fn prerender(&self, render_context: &RenderContext, window: &Window, camera: &Camera) {
         self.camera_renderer.update(render_context, window, camera);
     }
