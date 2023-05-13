@@ -8,11 +8,11 @@ use winit::window::Window;
 pub struct PhysicsPlugin;
 
 impl Plugin for PhysicsPlugin {
-    fn register_init(&self, world: &mut World, _init_schedule: &mut Schedule, window: &Window) {
+    fn register_init(&self, world: &mut World, _init_schedule: &mut Schedule, _window: &Window) {
         world.insert_resource(Physics::new());
     }
 
-    fn register_runtime(&self, world: &mut World, schedule: &mut Schedule) {
+    fn register_runtime(&self, _world: &mut World, schedule: &mut Schedule) {
         schedule.add_system(update_physics.in_set(ScheduleStage::PostUpdate));
     }
 }

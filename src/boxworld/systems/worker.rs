@@ -1,4 +1,4 @@
-use crate::boxworld::chunk::Chunk;
+
 use crate::boxworld::worker::BoxWorldTask;
 use crate::boxworld::BoxWorld;
 use crate::game::camera::Camera;
@@ -7,9 +7,9 @@ use crate::renderer::Renderer;
 use crate::worker::ComputeTaskPool;
 use bevy_ecs::prelude::*;
 use futures_lite::future;
-use nalgebra::Vector2;
-use std::collections::HashMap;
-use std::ops::Deref;
+
+
+
 
 pub fn update_worker(
     mut commands: Commands,
@@ -36,7 +36,7 @@ pub fn calculate(
     if world.update_current_chunk_coord(&camera) {
         // Enqueue calculation
         println!("Enqueued");
-        world.enqueue_work(&mut *task_pool, commands);
+        world.enqueue_work(&mut task_pool, commands);
     }
 
     if world.is_dirty() {

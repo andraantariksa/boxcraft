@@ -13,17 +13,17 @@ use crate::app::input::InputManager;
 use crate::misc::window::Window;
 use crate::renderer::Renderer;
 use bevy_ecs::prelude::*;
-use bevy_ecs::schedule::SystemSet;
+
 use futures_lite::future;
 
 use bevy_ecs::system::SystemState;
 use std::time::Instant;
 
 use crate::boxworld::chunk::Chunk;
-use crate::boxworld::BoxWorld;
+
 use crate::game::player::{update_player, update_player_toggle_fly, PlayerPlugin};
 use crate::game::systems::Time;
-use crate::physic::Physics;
+
 
 use crate::app::input::plugin::InputPlugin;
 use crate::boxworld::plugin::WorldPlugin;
@@ -220,7 +220,7 @@ impl Game {
             ResMut<UI>,
             ResMut<Renderer>,
         )>::new(&mut self.world);
-        let (mut camera, game_renderer, mut ui, mut renderer) = state.get_mut(&mut self.world);
+        let (camera, game_renderer, mut ui, mut renderer) = state.get_mut(&mut self.world);
 
         let ui_render_data = ui.get_draw_data(&self.window);
         renderer.render(&camera, &self.window, ui_render_data, &game_renderer);

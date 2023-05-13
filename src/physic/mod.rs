@@ -2,7 +2,7 @@ pub mod plugin;
 
 use rapier3d::prelude::*;
 
-use crate::plugin::Plugin;
+
 use bevy_ecs::prelude::*;
 
 #[derive(Resource)]

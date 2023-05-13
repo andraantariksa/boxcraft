@@ -9,11 +9,11 @@ use winit::window::Window;
 pub struct InputPlugin;
 
 impl Plugin for InputPlugin {
-    fn register_init(&self, world: &mut World, init_schedule: &mut Schedule, window: &Window) {
+    fn register_init(&self, world: &mut World, _init_schedule: &mut Schedule, _window: &Window) {
         world.insert_resource(InputManager::new());
     }
 
-    fn register_runtime(&self, world: &mut World, schedule: &mut Schedule) {
+    fn register_runtime(&self, _world: &mut World, schedule: &mut Schedule) {
         schedule.add_system(clear.in_set(ScheduleStage::PreRender));
     }
 }

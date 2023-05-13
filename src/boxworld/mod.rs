@@ -11,14 +11,14 @@ use bevy_ecs::prelude::*;
 use std::borrow::Borrow;
 use std::collections::{HashMap, HashSet};
 
-use std::sync::mpsc;
+
 
 use crate::boxworld::block::{Block, BlockType, RawFaceInstance};
 use crate::boxworld::chunk::Chunk;
 
-use crate::boxworld::systems::worker::{calculate, update_worker};
+
 use crate::boxworld::worker::{BoxWorldTask, BoxWorldTaskResult};
-use crate::plugin::Plugin;
+
 use crate::renderer::game_renderer::GameRenderer;
 use crate::renderer::Renderer;
 use crate::worker::ComputeTaskPool;
@@ -57,7 +57,7 @@ impl BoxWorld {
         }
     }
 
-    pub fn set_camera(&mut self, camera: &Camera) {}
+    pub fn set_camera(&mut self, _camera: &Camera) {}
 
     // pub fn get_faces(&self) -> Vec<&RawFaceInstance> {
     //     let center_point_chunk_coord = self.current_chunk_coord;

@@ -6,7 +6,7 @@ use crate::plugin::Plugin;
 use crate::renderer::camera::CameraBuffer;
 use bevy_ecs::prelude::*;
 use nalgebra::{clamp, Matrix4, Perspective3, Point3, Vector2, Vector3};
-use std::time::Duration;
+
 use winit::window::Window;
 
 #[derive(Default, Resource)]
@@ -99,11 +99,11 @@ pub fn sync_camera(input_manager: Res<InputManager>, mut camera: ResMut<Camera>,
 pub struct CameraPlugin;
 
 impl Plugin for CameraPlugin {
-    fn register_init(&self, world: &mut World, init_schedule: &mut Schedule, window: &Window) {
+    fn register_init(&self, world: &mut World, _init_schedule: &mut Schedule, _window: &Window) {
         world.insert_resource(Camera::new());
     }
 
-    fn register_runtime(&self, world: &mut World, schedule: &mut Schedule) {
+    fn register_runtime(&self, _world: &mut World, schedule: &mut Schedule) {
         schedule.add_system(sync_camera.in_set(ScheduleStage::PreUpdate));
     }
 }

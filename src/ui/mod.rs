@@ -2,12 +2,12 @@ pub mod plugin;
 pub mod renderer;
 pub mod systems;
 
-use crate::game::camera::Camera;
 
-use crate::game::player::Player;
+
+
 use bevy_ecs::prelude::*;
 
-use egui::{ClippedPrimitive, Color32, Context, FontDefinitions, Style, TexturesDelta, Visuals};
+use egui::{ClippedPrimitive, Context, FontDefinitions, TexturesDelta};
 use egui_winit_platform::{Platform, PlatformDescriptor};
 
 use wgpu::RenderPass;

@@ -16,5 +16,5 @@ impl Deref for ComputeTaskPool {
 }
 
 pub fn init_compute_task_pool() -> ComputeTaskPool {
-    ComputeTaskPool(BevyComputeTaskPool::init(|| TaskPool::new()))
+    ComputeTaskPool(BevyComputeTaskPool::init(TaskPool::new))
 }

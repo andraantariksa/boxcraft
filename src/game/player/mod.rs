@@ -84,7 +84,7 @@ pub fn update_player(
 pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
-    fn register_init(&self, _world: &mut World, init_schedule: &mut Schedule, window: &Window) {
+    fn register_init(&self, _world: &mut World, init_schedule: &mut Schedule, _window: &Window) {
         pub fn init_player(
             mut commands: Commands,
             mut physics: ResMut<Physics>,

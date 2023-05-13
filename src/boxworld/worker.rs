@@ -2,7 +2,7 @@ use crate::boxworld::chunk::Chunk;
 use bevy_ecs::prelude::*;
 use bevy_tasks::Task;
 use nalgebra::Vector2;
-use std::collections::HashMap;
+
 use std::ops::Deref;
 
 pub struct BoxWorldTaskResult {

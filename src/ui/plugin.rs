@@ -9,11 +9,11 @@ use winit::window::Window;
 pub struct UIPlugin;
 
 impl Plugin for UIPlugin {
-    fn register_init(&self, world: &mut World, schedule: &mut Schedule, window: &Window) {
+    fn register_init(&self, world: &mut World, _schedule: &mut Schedule, window: &Window) {
         world.insert_resource(UI::new(window));
     }
 
-    fn register_runtime(&self, world: &mut World, schedule: &mut Schedule) {
+    fn register_runtime(&self, _world: &mut World, schedule: &mut Schedule) {
         schedule
             .add_system(pre_update.in_set(ScheduleStage::PreUpdate))
             .add_system(draw_ui.in_set(ScheduleStage::PreRender));
