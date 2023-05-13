@@ -11,11 +11,8 @@ use bevy_ecs::prelude::*;
 use std::borrow::Borrow;
 use std::collections::{HashMap, HashSet};
 
-
-
 use crate::boxworld::block::{Block, BlockType, RawFaceInstance};
 use crate::boxworld::chunk::Chunk;
-
 
 use crate::boxworld::worker::{BoxWorldTask, BoxWorldTaskResult};
 
@@ -56,28 +53,6 @@ impl BoxWorld {
             enqueued_chunk: HashSet::new(),
         }
     }
-
-    pub fn set_camera(&mut self, _camera: &Camera) {}
-
-    // pub fn get_faces(&self) -> Vec<&RawFaceInstance> {
-    //     let center_point_chunk_coord = self.current_chunk_coord;
-    //     let corner_relative_coord = Self::RENDER_CHUNK as i32;
-    //     let mut block_raw_instances =
-    //         Vec::with_capacity(Self::TOTAL_CHUNK_BLOCKS * Block::TOTAL_FACES);
-    //
-    //     for x in -corner_relative_coord..=corner_relative_coord {
-    //         for z in -corner_relative_coord..=corner_relative_coord {
-    //             let current_chunk_coord = center_point_chunk_coord + Vector2::new(x, z);
-    //
-    //             let chunk =
-    //                 Chunk::with_block(Some(Block::new(BlockType::Dirt)), current_chunk_coord);
-    //             let raw_face_instances = chunk.get_raw_face_instances();
-    //             block_raw_instances.extend(raw_face_instances.iter());
-    //         }
-    //     }
-    //
-    //     block_raw_instances
-    // }
 
     fn enqueue_work(&mut self, task_pool: &mut ComputeTaskPool, mut commands: Commands) {
         let needed_chunk_coord = self.needed_chunk_coord();
@@ -140,8 +115,6 @@ impl BoxWorld {
                 .collect::<Vec<RawFaceInstance>>(),
             self.get_raw_face_instances_len(),
         );
-
-        println!("{:?}", self.visible_chunks.keys());
 
         self.is_dirty = false;
     }

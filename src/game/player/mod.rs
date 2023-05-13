@@ -94,13 +94,14 @@ impl Plugin for PlayerPlugin {
 
             let rb = RigidBodyBuilder::dynamic()
                 .position(Isometry::from(camera.position))
+                .gravity_scale(0.0)
                 .build();
             let rb_handle = physics.rigid_body_set.insert(rb);
 
-            // let col = ColliderBuilder::ball(1.0);
-            // physics
-            //     .collider_set
-            //     .insert_with_parent(col, rb_handle, &mut physics.rigid_body_set);
+            let col = ColliderBuilder::ball(1.0);
+            physics
+                .collider_set
+                .insert_with_parent(col, rb_handle, &mut physics.rigid_body_set);
 
             commands.insert_resource(Player::from(rb_handle));
         }
@@ -110,12 +111,12 @@ impl Plugin for PlayerPlugin {
 
     fn register_runtime(&self, _world: &mut World, schedule: &mut Schedule) {
         pub fn update_player_physics(
-            _player: Res<Player>,
-            _physics: ResMut<Physics>,
-            _camera: ResMut<Camera>,
+            player: Res<Player>,
+            mut physics: ResMut<Physics>,
+            mut camera: ResMut<Camera>,
         ) {
-            // let rb = physics.rigid_body_set.get_mut(player.rb_handle).unwrap();
-            // camera.position = Point::from(*rb.translation());
+            let rb = physics.rigid_body_set.get_mut(player.rb_handle).unwrap();
+            camera.position = Point::from(*rb.translation());
         }
 
         schedule.add_system(update_player_physics);
