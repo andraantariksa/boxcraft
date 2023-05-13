@@ -1,3 +1,5 @@
+pub mod plugin;
+
 use rapier3d::prelude::*;
 
 use crate::plugin::Plugin;
@@ -58,43 +60,6 @@ impl Physics {
     }
 }
 
-pub struct PhysicsPlugin;
-
-impl Plugin for PhysicsPlugin {
-    fn register_init(&self, world: &mut World, init_schedule: &mut Schedule) {
-        world.insert_resource(Physics::new());
-    }
+pub fn update_physics(mut physics: ResMut<Physics>) {
+    physics.update();
 }
-
-// pub struct PhysicsCommand {
-//     deleted_handle: Vec<RigidBodyHandle>,
-// }
-//
-// impl PhysicsCommand {
-//     pub fn new() -> Self {
-//         Self {
-//             deleted_handle: Vec::new(),
-//         }
-//     }
-// }
-//
-// pub fn init_physics(world: &mut World) {
-//     world.insert_resource(PhysicsCommand::new());
-// }
-//
-// pub fn process_command(command: Res<PhysicsCommand>, mut physics: ResMut<Physics>) {
-//     for handle in command.deleted_handle {
-//         physics
-//             .rigid_body_set
-//             .remove(
-//                 handle,
-//                 &mut physics.island_manager,
-//                 &mut physics.collider_set,
-//                 &mut physics.impulse_joint_set,
-//                 &mut physics.multibody_joint_set,
-//                 true,
-//             )
-//             .unwrap();
-//     }
-//     command.deleted_handle.clear();
-// }

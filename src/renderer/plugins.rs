@@ -5,7 +5,7 @@ use bevy_ecs::prelude::{Schedule, World};
 pub struct RendererPlugin;
 
 impl Plugin for RendererPlugin {
-    fn register_runtime(&self, world: &mut World, schedule: &mut Schedule) {
+    fn register_runtime(&self, _world: &mut World, schedule: &mut Schedule) {
         schedule.add_system(update_switch_wireframe);
     }
 }

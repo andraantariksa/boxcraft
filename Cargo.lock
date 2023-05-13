@@ -381,20 +381,20 @@ version = "0.1.0"
 dependencies = [
  "atomic_refcell",
  "bevy_ecs",
+ "bevy_tasks",
  "bitflags 2.0.2",
  "egui",
  "egui_wgpu_backend",
  "egui_winit_platform",
  "env_logger",
+ "futures-lite",
  "glob",
  "image",
  "log",
  "nalgebra",
  "parking_lot",
- "pollster",
  "rand",
  "rapier3d",
- "rayon",
  "shaderc",
  "voronator",
  "wgpu",
@@ -1722,12 +1722,6 @@ dependencies = [
  "flate2",
  "miniz_oxide 0.6.2",
 ]
-
-[[package]]
-name = "pollster"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "22686f4785f02a4fcc856d3b3bb19bf6c8160d103f7a99cc258bddd0251dc7f2"
 
 [[package]]
 name = "ppv-lite86"

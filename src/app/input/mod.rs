@@ -1,4 +1,5 @@
-pub mod plugins;
+pub mod plugin;
+mod systems;
 
 use nalgebra::Vector2;
 use std::collections::hash_map::Entry;

@@ -1,7 +1,9 @@
-use crate::game::Game;
 use bevy_ecs::prelude::*;
+use winit::window::Window;
 
 pub trait Plugin {
-    fn register_init(&self, world: &mut World, init_schedule: &mut Schedule) {}
+    #[allow(unused_variables)]
+    fn register_init(&self, world: &mut World, schedule: &mut Schedule, window: &Window) {}
+    #[allow(unused_variables)]
     fn register_runtime(&self, world: &mut World, schedule: &mut Schedule) {}
 }

@@ -1,10 +1,13 @@
-use crate::game::world::chunk::Chunk;
-use crate::game::Game;
+use crate::app::input::InputManager;
+use crate::boxworld::chunk::Chunk;
+use crate::game::schedule::ScheduleStage;
+use crate::game::systems::Time;
 use crate::plugin::Plugin;
 use crate::renderer::camera::CameraBuffer;
 use bevy_ecs::prelude::*;
 use nalgebra::{clamp, Matrix4, Perspective3, Point3, Vector2, Vector3};
 use std::time::Duration;
+use winit::window::Window;
 
 #[derive(Default, Resource)]
 pub struct Camera {
@@ -53,9 +56,8 @@ impl Camera {
             .normalize()
     }
 
-    pub fn update(&mut self, offset: &Vector2<f32>, time_elapsed: &Duration) {
-        let time_elapsed_sec = time_elapsed.as_secs_f32();
-        let timed_offset = offset * time_elapsed_sec * 10.0;
+    pub fn update(&mut self, offset: &Vector2<f32>, time_elapsed: f32) {
+        let timed_offset = offset * time_elapsed * 10.0;
 
         self.yaw -= timed_offset.x;
         self.pitch += timed_offset.y;
@@ -89,10 +91,19 @@ impl Camera {
     }
 }
 
+pub fn sync_camera(input_manager: Res<InputManager>, mut camera: ResMut<Camera>, time: Res<Time>) {
+    let mouse_movement = input_manager.get_mouse_movement();
+    camera.update(mouse_movement, time.dt);
+}
+
 pub struct CameraPlugin;
 
 impl Plugin for CameraPlugin {
-    fn register_init(&self, world: &mut World, init_schedule: &mut Schedule) {
+    fn register_init(&self, world: &mut World, init_schedule: &mut Schedule, window: &Window) {
         world.insert_resource(Camera::new());
+    }
+
+    fn register_runtime(&self, world: &mut World, schedule: &mut Schedule) {
+        schedule.add_system(sync_camera.in_set(ScheduleStage::PreUpdate));
     }
 }

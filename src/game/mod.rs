@@ -1,12 +1,12 @@
 pub mod camera;
-pub mod components;
+pub mod common;
 pub mod config;
 pub mod player;
+pub mod schedule;
 pub mod systems;
-pub mod world;
 
 use crate::game::camera::{Camera, CameraPlugin};
-use crate::ui::{update_draw_ui, UI};
+use crate::ui::UI;
 use std::sync::mpsc::{channel, Receiver, Sender};
 
 use crate::app::input::InputManager;
@@ -14,20 +14,25 @@ use crate::misc::window::Window;
 use crate::renderer::Renderer;
 use bevy_ecs::prelude::*;
 use bevy_ecs::schedule::SystemSet;
+use futures_lite::future;
 
 use bevy_ecs::system::SystemState;
 use std::time::Instant;
 
-use crate::game::player::{update_player, update_player_toggle_fly, Player, PlayerPlugin};
+use crate::boxworld::chunk::Chunk;
+use crate::boxworld::BoxWorld;
+use crate::game::player::{update_player, update_player_toggle_fly, PlayerPlugin};
 use crate::game::systems::Time;
-use crate::game::world::chunk::Chunk;
-use crate::game::world::BoxWorld;
-use crate::physic::{Physics, PhysicsPlugin};
+use crate::physic::Physics;
 
-use crate::app::input::plugins::InputPlugin;
+use crate::app::input::plugin::InputPlugin;
+use crate::boxworld::plugin::WorldPlugin;
+use crate::physic::plugin::PhysicsPlugin;
 use crate::plugin::Plugin;
 use crate::renderer::game_renderer::GameRenderer;
 use crate::renderer::plugins::RendererPlugin;
+use crate::ui::plugin::UIPlugin;
+use schedule::ScheduleStage;
 use winit::event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
 
@@ -50,7 +55,6 @@ impl Game {
         let window = Window::new(&event_loop);
 
         let mut world = World::new();
-        let mut ui = UI::new(&window);
 
         let plugins: &[&dyn Plugin] = &[
             &InputPlugin,
@@ -58,22 +62,21 @@ impl Game {
             &CameraPlugin,
             &PlayerPlugin,
             &RendererPlugin,
+            &WorldPlugin,
+            &UIPlugin,
         ];
         let mut init_schedule = Schedule::new();
         for plugin in plugins.iter() {
-            plugin.register_init(&mut world, &mut init_schedule);
+            plugin.register_init(&mut world, &mut init_schedule, &window);
         }
         init_schedule.run(&mut world);
 
         let camera = world.get_resource::<Camera>().unwrap();
-        let bw = BoxWorld::from(&camera);
-        let r = pollster::block_on(Renderer::new(&window));
+        let r = future::block_on(Renderer::new(&window));
         let gr = GameRenderer::new(&r.render_context, &window, camera);
-        world.insert_resource(bw);
         world.insert_resource(gr);
         world.insert_resource(r);
         world.insert_resource(Time::new());
-        world.insert_resource(ui);
 
         let mut schedule = Schedule::new();
         for plugin in plugins.iter() {
@@ -82,7 +85,17 @@ impl Game {
         schedule
             .add_system(update_player)
             .add_system(update_player_toggle_fly)
-            .add_system(update_draw_ui);
+            .set_default_base_set(ScheduleStage::Update)
+            .configure_sets(
+                (
+                    ScheduleStage::PreUpdate,
+                    ScheduleStage::Update,
+                    ScheduleStage::PostUpdate,
+                    ScheduleStage::PreRender,
+                    ScheduleStage::Render,
+                )
+                    .chain(),
+            );
 
         log::info!("Main thread {:?}", std::thread::current().id());
 
@@ -102,18 +115,18 @@ impl Game {
 
     pub fn run_loop(mut self) {
         {
-            let mut state =
-                SystemState::<(ResMut<BoxWorld>, Res<Renderer>, ResMut<GameRenderer>)>::new(
-                    &mut self.world,
-                );
-            let (mut world_blocks, renderer, mut game_renderer) = state.get_mut(&mut self.world);
-
-            let block_raw_instances = world_blocks.get_block_raw_instances();
-            game_renderer.update_blocks(
-                &renderer.render_context,
-                block_raw_instances,
-                block_raw_instances.len() as u32,
-            );
+            // let mut state =
+            //     SystemState::<(ResMut<BoxWorld>, Res<Renderer>, ResMut<GameRenderer>)>::new(
+            //         &mut self.world,
+            //     );
+            // let (mut world_blocks, renderer, mut game_renderer) = state.get_mut(&mut self.world);
+            //
+            // let block_raw_instances = world_blocks.get_raw_face_instances();
+            // game_renderer.update_blocks(
+            //     &renderer.render_context,
+            //     block_raw_instances,
+            //     world_blocks.get_block_count() as u32,
+            // );
         }
 
         self.time_start = Instant::now();
@@ -197,47 +210,17 @@ impl Game {
 
         self.world.insert_resource(Time::from(time_elapsed));
 
-        {
-            let mut ui = self.world.get_resource_mut::<UI>().unwrap();
-            ui.pre_update(time_elapsed.as_secs_f64());
-
-            let mut physics = self.world.get_resource_mut::<Physics>().unwrap();
-            physics.update();
-        }
         self.schedule.run(&mut self.world);
 
         let mut state = SystemState::<(
-            ResMut<InputManager>,
             ResMut<Camera>,
             Res<GameRenderer>,
             ResMut<UI>,
             ResMut<Renderer>,
         )>::new(&mut self.world);
-        let (mut input_manager, mut camera, game_renderer, mut ui, mut renderer) =
-            state.get_mut(&mut self.world);
+        let (mut camera, game_renderer, mut ui, mut renderer) = state.get_mut(&mut self.world);
 
         let ui_render_data = ui.get_draw_data(&self.window);
-
-        let mouse_movement = input_manager.get_mouse_movement();
-        camera.update(mouse_movement, &time_elapsed);
-
-        // if world.update_chunk(&self.to_world_tx, &self.chunk_rx, &camera) {
-        //     let block_raw_instances = world.get_block_raw_instances();
-        //     let mut renderer = se
-        //     renderer.game_renderer.update_blocks(
-        //         &self.renderer.render_context,
-        //         block_raw_instances,
-        //         block_raw_instances.len() as u32,
-        //     );
-        // }
-
         renderer.render(&camera, &self.window, ui_render_data, &game_renderer);
-        input_manager.clear();
     }
-}
-
-#[derive(Debug, Eq, PartialEq, SystemSet, Hash, Clone)]
-pub enum ScheduleStage {
-    Update,
-    Render,
 }

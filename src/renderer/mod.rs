@@ -1,18 +1,18 @@
 use crate::game::camera::Camera;
 use crate::misc::window::Window;
-use crate::ui::{UIDrawData, UI};
+use crate::ui::{UIDrawData};
 
 use crate::renderer::context::RenderContext;
 use crate::renderer::game_renderer::GameRenderer;
 
 use bevy_ecs::prelude::*;
-use std::time::Duration;
+
 use wgpu::{
     Color, LoadOp, Operations, RenderPassColorAttachment, RenderPassDepthStencilAttachment,
     RenderPassDescriptor,
 };
 
-use crate::game::world::BoxWorld;
+
 use crate::renderer::texture::Texture;
 use crate::ui::renderer::DebugUIRenderer;
 use winit::dpi::PhysicalSize;

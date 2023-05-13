@@ -8,6 +8,7 @@ use crate::plugin::Plugin;
 use bevy_ecs::prelude::*;
 use rapier3d::prelude::*;
 use winit::event::VirtualKeyCode;
+use winit::window::Window;
 
 #[derive(Resource)]
 pub struct Player {
@@ -45,7 +46,7 @@ pub fn update_player_toggle_fly(
 
 pub fn update_player(
     player: Res<Player>,
-    mut camera: ResMut<Camera>,
+    camera: ResMut<Camera>,
     input_manager: Res<InputManager>,
     elapsed_time: Res<Time>,
     mut physics: ResMut<Physics>,
@@ -53,7 +54,7 @@ pub fn update_player(
     const SPEED_MOVEMENT: f32 = 100.0;
 
     let rb = physics.rigid_body_set.get_mut(player.rb_handle).unwrap();
-    let mut translation = rb.translation().clone();
+    let mut translation = *rb.translation();
 
     let delta_movement = SPEED_MOVEMENT * elapsed_time.dt;
     let right_direction = camera.get_direction_right_horizontally();
@@ -83,7 +84,7 @@ pub fn update_player(
 pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
-    fn register_init(&self, world: &mut World, init_schedule: &mut Schedule) {
+    fn register_init(&self, _world: &mut World, init_schedule: &mut Schedule, window: &Window) {
         pub fn init_player(
             mut commands: Commands,
             mut physics: ResMut<Physics>,
@@ -107,11 +108,11 @@ impl Plugin for PlayerPlugin {
         init_schedule.add_system(init_player);
     }
 
-    fn register_runtime(&self, world: &mut World, schedule: &mut Schedule) {
+    fn register_runtime(&self, _world: &mut World, schedule: &mut Schedule) {
         pub fn update_player_physics(
-            player: Res<Player>,
-            mut physics: ResMut<Physics>,
-            mut camera: ResMut<Camera>,
+            _player: Res<Player>,
+            _physics: ResMut<Physics>,
+            _camera: ResMut<Camera>,
         ) {
             // let rb = physics.rigid_body_set.get_mut(player.rb_handle).unwrap();
             // camera.position = Point::from(*rb.translation());

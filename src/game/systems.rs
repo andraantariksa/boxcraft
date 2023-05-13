@@ -5,7 +5,7 @@
 // use crate::game::player::Player;
 // use crate::misc::input::InputManager;
 //
-// use crate::game::world::World as WorldEnvironment;
+// use crate::boxworld::World as WorldEnvironment;
 //
 // use crate::game::physics::Physics;
 // // use crate::game::physics::Physics;
