@@ -57,8 +57,6 @@ impl BoxWorld {
     fn enqueue_work(&mut self, task_pool: &mut ComputeTaskPool, mut commands: Commands) {
         let needed_chunk_coord = self.needed_chunk_coord();
 
-        println!("Needed chunk = {:?}", needed_chunk_coord);
-
         self.enqueued_chunk.extend(&needed_chunk_coord);
 
         for chunk_coord in needed_chunk_coord {
@@ -82,6 +80,7 @@ impl BoxWorld {
     }
 
     pub fn insert_chunk(&mut self, coord: Vector2<i32>, chunk: Chunk) {
+        self.enqueued_chunk.remove(&coord);
         self.visible_chunks.insert(coord, chunk);
         self.is_dirty = true;
     }
