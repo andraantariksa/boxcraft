@@ -6,8 +6,9 @@ use crate::renderer::util::{any_sized_as_u8_slice, any_slice_as_u8_slice};
 use crate::renderer::vertex::{Vertex, VertexLike};
 use nalgebra::{Point3, Vector2, Vector3};
 
-use crate::game::world::block::RawFaceInstance;
+use crate::boxworld::block::RawFaceInstance;
 use crate::renderer::texture::Texture;
+use bevy_ecs::prelude::*;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{
     include_spirv, BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayoutDescriptor,
@@ -19,6 +20,7 @@ use wgpu::{
     VertexBufferLayout,
 };
 
+#[derive(Resource)]
 pub struct GameRenderer {
     camera_renderer: CameraRenderer,
     camera_bind_group: BindGroup,
@@ -28,7 +30,7 @@ pub struct GameRenderer {
     // render_pipeline_descriptor: RenderPipelineDescriptor<'static>,
     cube_vertex_buffer: Buffer,
     cube_indices_buffer: Buffer,
-    block_instances_buffer: Buffer,
+    face_instances_buffer: Buffer,
     fragment_shader_module: ShaderModule,
     vertex_shader_module: ShaderModule,
     color_targets_state: [Option<ColorTargetState>; 1],
@@ -36,9 +38,8 @@ pub struct GameRenderer {
     cubes_pipeline_layout: PipelineLayout,
 
     texture_atlas: Texture,
-    pub depth_texture: Texture,
 
-    blocks_total: u32,
+    faces_count: u32,
 }
 
 impl GameRenderer {
@@ -235,7 +236,6 @@ impl GameRenderer {
             write_mask: ColorWrites::all(),
         })];
 
-        let depth_texture = Texture::new_depth(render_context);
         let render_pipeline_descriptor = RenderPipelineDescriptor {
             label: Some("Create render pipeline: Render pipeline descriptor"),
             layout: Some(&game_pipeline_layout),
@@ -287,15 +287,14 @@ impl GameRenderer {
 
             cube_vertex_buffer: cubes_vertices_buffer,
             cube_indices_buffer: cubes_indices_buffer,
-            block_instances_buffer,
+            face_instances_buffer: block_instances_buffer,
 
             fragment_shader_module,
             vertex_shader_module,
 
             color_targets_state,
             block_instance_vertex_buffer_layout, // render_pipeline_descriptor,
-            blocks_total: 0,
-            depth_texture,
+            faces_count: 0,
             texture_atlas,
             texture_bind_group,
         }
@@ -304,24 +303,19 @@ impl GameRenderer {
     pub fn update_blocks(
         &mut self,
         render_context: &RenderContext,
-        blocks: &Vec<RawFaceInstance>,
-        blocks_total: u32,
+        raw_face_instances: &[RawFaceInstance],
+        faces_count: u32,
     ) {
-        self.blocks_total = blocks_total;
-        self.block_instances_buffer =
+        self.faces_count = faces_count;
+        self.face_instances_buffer =
             render_context
                 .device
                 .create_buffer_init(&BufferInitDescriptor {
                     label: Some("Block instances buffer recreation"),
-                    contents: any_slice_as_u8_slice(blocks.as_slice()),
+                    contents: any_slice_as_u8_slice(raw_face_instances),
                     usage: BufferUsages::VERTEX,
                 })
     }
-
-    pub fn resize(&mut self, render_context: &RenderContext) {
-        self.depth_texture = Texture::new_depth(render_context);
-    }
-
     pub fn prerender(&self, render_context: &RenderContext, window: &Window, camera: &Camera) {
         self.camera_renderer.update(render_context, window, camera);
     }
@@ -333,14 +327,14 @@ impl GameRenderer {
         render_pass.set_bind_group(1, &self.texture_bind_group, &[]);
 
         render_pass.set_vertex_buffer(0, self.cube_vertex_buffer.slice(..));
-        render_pass.set_vertex_buffer(1, self.block_instances_buffer.slice(..));
+        render_pass.set_vertex_buffer(1, self.face_instances_buffer.slice(..));
 
         render_pass.set_index_buffer(
             self.cube_indices_buffer.slice(..),
             wgpu::IndexFormat::Uint16,
         );
 
-        render_pass.draw_indexed(0..6, 0, 0..self.blocks_total);
+        render_pass.draw_indexed(0..6, 0, 0..self.faces_count);
     }
 
     pub fn is_wireframe_only(&self) -> bool {

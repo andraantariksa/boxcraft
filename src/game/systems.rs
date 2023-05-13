@@ -5,7 +5,7 @@
 // use crate::game::player::Player;
 // use crate::misc::input::InputManager;
 //
-// use crate::game::world::World as WorldEnvironment;
+// use crate::boxworld::World as WorldEnvironment;
 //
 // use crate::game::physics::Physics;
 // // use crate::game::physics::Physics;
@@ -69,14 +69,14 @@ use std::time::Duration;
 #[derive(Resource)]
 pub struct Time {
     pub dt: f32,
-    pub stamp: f32,
+    pub start: f32,
 }
 
 impl Time {
     pub fn new() -> Self {
         Self {
             dt: 0.0,
-            stamp: get_timestamp(),
+            start: get_timestamp(),
         }
     }
 }
@@ -85,7 +85,7 @@ impl From<f32> for Time {
     fn from(value: f32) -> Self {
         Self {
             dt: value,
-            stamp: get_timestamp(),
+            start: get_timestamp(),
         }
     }
 }
@@ -94,7 +94,7 @@ impl From<Duration> for Time {
     fn from(value: Duration) -> Self {
         Self {
             dt: value.as_secs_f32(),
-            stamp: get_timestamp(),
+            start: get_timestamp(),
         }
     }
 }

@@ -1,7 +1,7 @@
+use crate::boxworld::block::{Block, RawFaceInstance};
+use crate::boxworld::BoxWorld;
+use crate::game::common::transform::Transform;
 use bevy_ecs::prelude::Resource;
-use crate::game::components::transform::Transform;
-use crate::game::world::block::{Block, RawFaceInstance};
-use crate::game::world::BoxWorld;
 use nalgebra::{Rotation3, Translation3, Vector2, Vector3};
 
 use super::block::BlockFace;
@@ -261,7 +261,7 @@ impl Chunk {
         }
     }
 
-    pub fn get_raw_face_instances(&self) -> Vec<RawFaceInstance> {
-        self.raw_face_instances.clone()
+    pub fn get_raw_face_instances(&self) -> &Vec<RawFaceInstance> {
+        &self.raw_face_instances
     }
 }

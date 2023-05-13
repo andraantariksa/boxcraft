@@ -1,7 +1,9 @@
+pub mod plugin;
+mod systems;
+
 use nalgebra::Vector2;
 use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet};
-
 
 use bevy_ecs::prelude::*;
 use winit::dpi::PhysicalPosition;
@@ -65,14 +67,11 @@ impl InputManager {
                             let entry = entry.remove();
 
                             if timestamp - entry.timestamp < DOUBLE_PRESS_MAX_INTERVAL {
-                                println!("Done");
                                 self.double_pressed.insert(*v_key_code);
                             }
-                            println!("or not");
                         }
                     }
                     Entry::Vacant(entry) => {
-                        println!("First press");
                         entry.insert(DoublePress {
                             timestamp,
                             kind: DoublePressState::FirstPress,
@@ -87,10 +86,8 @@ impl InputManager {
                     if timestamp - entry.timestamp < DOUBLE_PRESS_MAX_INTERVAL
                         && entry.kind == DoublePressState::FirstPress
                     {
-                        println!("First release");
                         entry.kind = DoublePressState::FirstRelease;
                     } else {
-                        println!("Deleted first release");
                         queue_to_delete = true;
                     }
                 }

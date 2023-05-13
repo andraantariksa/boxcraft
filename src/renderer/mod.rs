@@ -1,25 +1,28 @@
-use crate::ui::{UI, UIDrawData};
 use crate::game::camera::Camera;
 use crate::misc::window::Window;
+use crate::ui::{UIDrawData};
 
 use crate::renderer::context::RenderContext;
 use crate::renderer::game_renderer::GameRenderer;
 
-use std::time::Duration;
 use bevy_ecs::prelude::*;
+
 use wgpu::{
     Color, LoadOp, Operations, RenderPassColorAttachment, RenderPassDepthStencilAttachment,
     RenderPassDescriptor,
 };
 
+
+use crate::renderer::texture::Texture;
 use crate::ui::renderer::DebugUIRenderer;
-use crate::game::world::BoxWorld;
 use winit::dpi::PhysicalSize;
 
 pub mod camera;
 pub mod context;
 pub mod error;
 pub mod game_renderer;
+pub mod plugins;
+pub mod systems;
 pub mod texture;
 pub mod util;
 pub mod vertex;
@@ -27,34 +30,31 @@ pub mod vertex;
 #[derive(Resource)]
 pub struct Renderer {
     pub render_context: RenderContext,
-
-    pub game_renderer: GameRenderer,
     pub ui_renderer: DebugUIRenderer,
+    depth_texture: Texture,
 }
 
 impl Renderer {
-    pub async fn new(window: &Window, camera: &Camera, _ui: &mut UI) -> Self {
+    pub async fn new(window: &Window) -> Self {
         let render_context = RenderContext::new(window).await;
-        let game_renderer = GameRenderer::new(&render_context, window, camera);
         let ui_renderer = DebugUIRenderer::new(&render_context);
+        let depth_texture = Texture::new_depth(&render_context);
 
         Self {
             ui_renderer,
-            game_renderer,
             render_context,
+            depth_texture,
         }
     }
 
     pub fn render(
         &mut self,
         camera: &Camera,
-        _time_elapsed: &Duration,
         window: &Window,
         ui_render_state: UIDrawData,
-        _world_blocks: &BoxWorld,
+        game_renderer: &GameRenderer,
     ) {
-        self.game_renderer
-            .prerender(&self.render_context, window, camera);
+        game_renderer.prerender(&self.render_context, window, camera);
 
         let (mut command_encoder, texture, texture_view) =
             self.render_context.create_command_encoder();
@@ -76,7 +76,7 @@ impl Renderer {
                     },
                 })],
                 depth_stencil_attachment: Some(RenderPassDepthStencilAttachment {
-                    view: &self.game_renderer.depth_texture.texture_view,
+                    view: &self.depth_texture.texture_view,
                     depth_ops: Some(Operations {
                         load: LoadOp::Clear(1.0),
                         store: true,
@@ -85,7 +85,7 @@ impl Renderer {
                 }),
             });
 
-            self.game_renderer.render(&mut render_pass);
+            game_renderer.render(&mut render_pass);
         }
         self.ui_renderer.render(
             &mut command_encoder,
@@ -106,7 +106,7 @@ impl Renderer {
     pub fn resize(&mut self, new_window_size: &PhysicalSize<u32>) {
         if new_window_size.width > 0 && new_window_size.height > 0 {
             self.render_context.resize(new_window_size);
-            self.game_renderer.resize(&self.render_context);
+            self.depth_texture = Texture::new_depth(&self.render_context);
         }
     }
 }

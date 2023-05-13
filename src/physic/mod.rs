@@ -1,6 +1,7 @@
-
+pub mod plugin;
 
 use rapier3d::prelude::*;
+
 
 use bevy_ecs::prelude::*;
 
@@ -47,14 +48,18 @@ impl Physics {
             &mut self.island_manager,
             &mut self.broad_phase,
             &mut self.narrow_phase,
-            &mut Default::default(),
-            &mut Default::default(),
-            &mut Default::default(),
-            &mut Default::default(),
-            &mut Default::default(),
+            &mut self.rigid_body_set,
+            &mut self.collider_set,
+            &mut self.impulse_joint_set,
+            &mut self.multibody_joint_set,
+            &mut self.ccd_solver,
             None,
             &self.physics_hooks,
             &self.event_handler,
         );
     }
+}
+
+pub fn update_physics(mut physics: ResMut<Physics>) {
+    physics.update();
 }

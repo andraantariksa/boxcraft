@@ -1,4 +1,4 @@
-use crate::game::components::transform::Transform;
+use crate::game::common::transform::Transform;
 use bitflags::bitflags;
 use nalgebra::{Matrix4, Vector2};
 use std::time::Duration;
