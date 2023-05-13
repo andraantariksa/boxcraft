@@ -1,5 +1,5 @@
-use crate::boxworld::systems::calculate::{calculate, poll_calculation_task};
 use crate::boxworld::systems::sync_camera::sync_camera;
+use crate::boxworld::systems::worker::{calculate, update_worker};
 use crate::boxworld::BoxWorld;
 use crate::game::schedule::ScheduleStage;
 use crate::plugin::Plugin;
@@ -15,7 +15,7 @@ impl Plugin for WorldPlugin {
 
     fn register_runtime(&self, world: &mut World, schedule: &mut Schedule) {
         schedule
-            .add_systems((poll_calculation_task, calculate))
+            .add_systems((calculate, update_worker))
             .add_system(sync_camera.in_set(ScheduleStage::PostUpdate));
     }
 }

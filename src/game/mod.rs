@@ -32,6 +32,7 @@ use crate::plugin::Plugin;
 use crate::renderer::game_renderer::GameRenderer;
 use crate::renderer::plugins::RendererPlugin;
 use crate::ui::plugin::UIPlugin;
+use crate::worker::plugins::WorkerPlugin;
 use schedule::ScheduleStage;
 use winit::event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
@@ -64,6 +65,7 @@ impl Game {
             &RendererPlugin,
             &WorldPlugin,
             &UIPlugin,
+            &WorkerPlugin,
         ];
         let mut init_schedule = Schedule::new();
         for plugin in plugins.iter() {

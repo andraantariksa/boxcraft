@@ -4,12 +4,10 @@ pub mod generator;
 pub mod plugin;
 pub mod systems;
 pub mod voronoi;
+pub mod worker;
 
 use crate::game::camera::Camera;
 use bevy_ecs::prelude::*;
-use bevy_tasks::prelude::*;
-use bevy_tasks::Task;
-
 use std::borrow::Borrow;
 use std::collections::{HashMap, HashSet};
 
@@ -18,21 +16,14 @@ use std::sync::mpsc;
 use crate::boxworld::block::{Block, BlockType, RawFaceInstance};
 use crate::boxworld::chunk::Chunk;
 
-use crate::boxworld::systems::calculate::{calculate, poll_calculation_task};
+use crate::boxworld::systems::worker::{calculate, update_worker};
+use crate::boxworld::worker::{BoxWorldTask, BoxWorldTaskResult};
 use crate::plugin::Plugin;
 use crate::renderer::game_renderer::GameRenderer;
 use crate::renderer::Renderer;
+use crate::worker::ComputeTaskPool;
 use nalgebra::{try_convert, Vector2, Vector3};
 use winit::dpi::Pixel;
-
-#[derive(Component)]
-pub struct C(pub Task<()>);
-
-pub struct ChunkWorker {
-    pub task: Task<()>,
-    // tx: Sender<i32>,
-    // rx: Receiver<i32>,
-}
 
 #[derive(Resource)]
 pub struct BoxWorld {
@@ -41,7 +32,6 @@ pub struct BoxWorld {
 
     enqueued_chunk: HashSet<Vector2<i32>>,
     is_dirty: bool,
-    // chunk_calculation_worker: ChunkWorker,
 }
 
 impl BoxWorld {
@@ -61,20 +51,13 @@ impl BoxWorld {
     pub fn new() -> Self {
         Self {
             visible_chunks: HashMap::with_capacity(Self::TOTAL_CHUNKS),
-            current_chunk_coord: Vector2::new(0, 0),
-            is_dirty: false,
+            current_chunk_coord: Vector2::new(i32::MAX, i32::MAX),
+            is_dirty: true,
             enqueued_chunk: HashSet::new(),
-            // chunk_calculation_worker: Self::init_worker_queue(),
         }
     }
 
     pub fn set_camera(&mut self, camera: &Camera) {}
-
-    pub fn init_worker_queue() -> ChunkWorker {
-        let task = ComputeTaskPool::get().spawn(async move {});
-        let (_tx, _rx) = mpsc::channel::<i32>();
-        ChunkWorker { task }
-    }
 
     // pub fn get_faces(&self) -> Vec<&RawFaceInstance> {
     //     let center_point_chunk_coord = self.current_chunk_coord;
@@ -96,19 +79,23 @@ impl BoxWorld {
     //     block_raw_instances
     // }
 
-    fn try_enqueue_work(&mut self, mut commands: Commands) {
+    fn enqueue_work(&mut self, task_pool: &mut ComputeTaskPool, mut commands: Commands) {
         let needed_chunk_coord = self.needed_chunk_coord();
-        let task_pool = ComputeTaskPool::get();
 
-        self.is_dirty = false;
+        println!("Needed chunk = {:?}", needed_chunk_coord);
 
-        let task = task_pool.spawn(async move {
-            for chunk_coord in needed_chunk_coord {
-                Chunk::with_block(Some(Block::new(BlockType::Dirt)), chunk_coord);
-            }
-        });
+        self.enqueued_chunk.extend(&needed_chunk_coord);
 
-        commands.spawn(C(task));
+        for chunk_coord in needed_chunk_coord {
+            let task = task_pool.spawn(async move {
+                let chunk = Chunk::with_block(Some(Block::new(BlockType::Dirt)), chunk_coord);
+                BoxWorldTaskResult {
+                    chunk,
+                    coord: chunk_coord,
+                }
+            });
+            commands.spawn(BoxWorldTask(task));
+        }
     }
 
     pub fn update_current_chunk_coord(&mut self, camera: &Camera) -> bool {
@@ -119,7 +106,7 @@ impl BoxWorld {
         ret
     }
 
-    pub fn add_chunk(&mut self, coord: Vector2<i32>, chunk: Chunk) {
+    pub fn insert_chunk(&mut self, coord: Vector2<i32>, chunk: Chunk) {
         self.visible_chunks.insert(coord, chunk);
         self.is_dirty = true;
     }
@@ -128,11 +115,8 @@ impl BoxWorld {
         self.is_dirty
     }
 
-    pub fn update_blocks(
-        &mut self,
-        _renderer: &Renderer,
-        _game_renderer: &mut GameRenderer,
-    ) -> Vec<Task<Chunk>> {
+    pub fn update_blocks(&mut self, renderer: &Renderer, game_renderer: &mut GameRenderer) {
+        // Remove far blocks
         let max_diff = Self::RENDER_CHUNK as i32;
 
         let mut chunk_to_remove = Vec::new();
@@ -147,9 +131,19 @@ impl BoxWorld {
             self.visible_chunks.remove(chunk_coord);
         }
 
-        let _raw = self.get_raw_face_instances();
+        let raw_face_instances = self.get_raw_face_instances();
 
-        Vec::new()
+        game_renderer.update_blocks(
+            &renderer.render_context,
+            &raw_face_instances
+                .cloned()
+                .collect::<Vec<RawFaceInstance>>(),
+            self.get_raw_face_instances_len(),
+        );
+
+        println!("{:?}", self.visible_chunks.keys());
+
+        self.is_dirty = false;
     }
 
     fn needed_chunk_coord(&self) -> HashSet<Vector2<i32>> {
@@ -186,8 +180,10 @@ impl BoxWorld {
         .cast::<f32>()
     }
 
-    pub fn get_block_count(&self) -> usize {
-        self.visible_chunks.len() * Chunk::MAXIMUM_TOTAL_BLOCKS
+    pub fn get_raw_face_instances_len(&self) -> u32 {
+        self.visible_chunks.values().fold(0usize, |len, chunk| {
+            len + chunk.get_raw_face_instances().len()
+        }) as u32
     }
 
     pub fn get_raw_face_instances(&self) -> impl Iterator<Item = &RawFaceInstance> {

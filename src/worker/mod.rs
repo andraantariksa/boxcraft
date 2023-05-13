@@ -2,7 +2,7 @@ use bevy_ecs::prelude::*;
 use bevy_tasks::{ComputeTaskPool as BevyComputeTaskPool, TaskPool};
 use std::ops::Deref;
 
-mod plugins;
+pub mod plugins;
 
 #[derive(Resource)]
 pub struct ComputeTaskPool(&'static BevyComputeTaskPool);
