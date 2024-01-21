@@ -106,7 +106,7 @@ impl Plugin for PlayerPlugin {
             commands.insert_resource(Player::from(rb_handle));
         }
 
-        init_schedule.add_system(init_player);
+        init_schedule.add_systems(init_player);
     }
 
     fn register_runtime(&self, _world: &mut World, schedule: &mut Schedule) {
@@ -119,6 +119,6 @@ impl Plugin for PlayerPlugin {
             camera.position = Point::from(*rb.translation());
         }
 
-        schedule.add_system(update_player_physics);
+        schedule.add_systems(update_player_physics);
     }
 }

@@ -9,8 +9,6 @@ use bevy_ecs::prelude::*;
 use futures_lite::future;
 
 
-
-
 pub fn update_worker(
     mut commands: Commands,
     mut query: Query<(Entity, &mut BoxWorldTask)>,
@@ -30,13 +28,12 @@ pub fn calculate(
     mut world: ResMut<BoxWorld>,
     renderer: Res<Renderer>,
     camera: Res<Camera>,
-    mut task_pool: ResMut<ComputeTaskPool>,
     mut game_renderer: ResMut<GameRenderer>,
 ) {
     if world.update_current_chunk_coord(&camera) {
         // Enqueue calculation
         println!("Enqueued");
-        world.enqueue_work(&mut task_pool, commands);
+        world.enqueue_work(commands);
     }
 
     if world.is_dirty() {

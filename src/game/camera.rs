@@ -104,6 +104,6 @@ impl Plugin for CameraPlugin {
     }
 
     fn register_runtime(&self, _world: &mut World, schedule: &mut Schedule) {
-        schedule.add_system(sync_camera.in_set(ScheduleStage::PreUpdate));
+        schedule.add_systems(sync_camera.in_set(ScheduleStage::PreUpdate));
     }
 }

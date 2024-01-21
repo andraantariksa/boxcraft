@@ -67,7 +67,7 @@ impl Game {
             &UIPlugin,
             &WorkerPlugin,
         ];
-        let mut init_schedule = Schedule::new();
+        let mut init_schedule = Schedule::default();
         for plugin in plugins.iter() {
             plugin.register_init(&mut world, &mut init_schedule, &window);
         }
@@ -80,14 +80,13 @@ impl Game {
         world.insert_resource(r);
         world.insert_resource(Time::new());
 
-        let mut schedule = Schedule::new();
+        let mut schedule = Schedule::default();
         for plugin in plugins.iter() {
             plugin.register_runtime(&mut world, &mut schedule);
         }
         schedule
-            .add_system(update_player)
-            .add_system(update_player_toggle_fly)
-            .set_default_base_set(ScheduleStage::Update)
+            .add_systems(update_player)
+            .add_systems(update_player_toggle_fly)
             .configure_sets(
                 (
                     ScheduleStage::PreUpdate,

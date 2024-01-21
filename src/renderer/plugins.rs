@@ -6,6 +6,6 @@ pub struct RendererPlugin;
 
 impl Plugin for RendererPlugin {
     fn register_runtime(&self, _world: &mut World, schedule: &mut Schedule) {
-        schedule.add_system(update_switch_wireframe);
+        schedule.add_systems(update_switch_wireframe);
     }
 }

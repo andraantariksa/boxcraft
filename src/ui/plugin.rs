@@ -15,7 +15,7 @@ impl Plugin for UIPlugin {
 
     fn register_runtime(&self, _world: &mut World, schedule: &mut Schedule) {
         schedule
-            .add_system(pre_update.in_set(ScheduleStage::PreUpdate))
-            .add_system(draw_ui.in_set(ScheduleStage::PreRender));
+            .add_systems(pre_update.in_set(ScheduleStage::PreUpdate))
+            .add_systems(draw_ui.in_set(ScheduleStage::PreRender));
     }
 }

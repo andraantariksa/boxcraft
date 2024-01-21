@@ -13,7 +13,7 @@ impl Plugin for PhysicsPlugin {
     }
 
     fn register_runtime(&self, _world: &mut World, schedule: &mut Schedule) {
-        schedule.add_system(update_physics.in_set(ScheduleStage::PostUpdate));
+        schedule.add_systems(update_physics.in_set(ScheduleStage::PostUpdate));
     }
 }
 

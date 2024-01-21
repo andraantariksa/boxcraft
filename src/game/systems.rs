@@ -39,8 +39,8 @@
 //
 //         Self {
 //             schedule: Schedule::builder()
-//                 .add_system(crate::game::player::update_player_system())
-//                 // .add_system(crate::game::physics::update_physics_system())
+//                 .add_systems(crate::game::player::update_player_system())
+//                 // .add_systems(crate::game::physics::update_physics_system())
 //                 .build(),
 //             world,
 //             resources,

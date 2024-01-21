@@ -10,6 +10,7 @@ use crate::game::camera::Camera;
 use bevy_ecs::prelude::*;
 use std::borrow::Borrow;
 use std::collections::{HashMap, HashSet};
+use bevy_tasks::{AsyncComputeTaskPool, TaskPoolBuilder};
 
 use crate::boxworld::block::{Block, BlockType, RawFaceInstance};
 use crate::boxworld::chunk::Chunk;
@@ -18,7 +19,6 @@ use crate::boxworld::worker::{BoxWorldTask, BoxWorldTaskResult};
 
 use crate::renderer::game_renderer::GameRenderer;
 use crate::renderer::Renderer;
-use crate::worker::ComputeTaskPool;
 use nalgebra::{try_convert, Vector2, Vector3};
 use winit::dpi::Pixel;
 
@@ -54,10 +54,17 @@ impl BoxWorld {
         }
     }
 
-    fn enqueue_work(&mut self, task_pool: &mut ComputeTaskPool, mut commands: Commands) {
+    fn enqueue_work(&mut self, mut commands: Commands) {
         let needed_chunk_coord = self.needed_chunk_coord();
 
         self.enqueued_chunk.extend(&needed_chunk_coord);
+
+        let task_pool = AsyncComputeTaskPool::get_or_init(|| {
+            TaskPoolBuilder::default()
+                .num_threads(2)
+                .thread_name("Async Compute Task Pool".to_string())
+                .build()
+        });
 
         for chunk_coord in needed_chunk_coord {
             let task = task_pool.spawn(async move {

@@ -14,6 +14,6 @@ impl Plugin for InputPlugin {
     }
 
     fn register_runtime(&self, _world: &mut World, schedule: &mut Schedule) {
-        schedule.add_system(clear.in_set(ScheduleStage::PreRender));
+        schedule.add_systems(clear.in_set(ScheduleStage::PreRender));
     }
 }

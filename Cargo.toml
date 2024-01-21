@@ -14,10 +14,10 @@ egui = "0.21.0"
 egui_wgpu_backend = "0.22.0"
 egui_winit_platform = "0.18.0"
 log = "0.4"
-env_logger = { version = "0.10", features = ["humantime", "regex"], default-features = false }
-futures-lite = "1.13.0"
-bevy_ecs = "0.10.1"
-bevy_tasks = "0.10.1"
+env_logger = { version = "0.11.0", features = ["humantime", "regex"], default-features = false }
+futures-lite = "2.2.0"
+bevy_ecs = "0.12.1"
+bevy_tasks = { version = "0.12.1", features = ["multi-threaded"] }
 atomic_refcell = "0.1.9"
 parking_lot = "0.12.1"
 rand = "0.8.5"

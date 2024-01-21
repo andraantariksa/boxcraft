@@ -16,6 +16,6 @@ impl Plugin for WorldPlugin {
     fn register_runtime(&self, _world: &mut World, schedule: &mut Schedule) {
         schedule
             .add_systems((calculate, update_worker))
-            .add_system(sync_camera.in_set(ScheduleStage::PostUpdate));
+            .add_systems(sync_camera.in_set(ScheduleStage::PostUpdate));
     }
 }
